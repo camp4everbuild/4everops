@@ -22,6 +22,32 @@
   }
 }
 
+/*
+ * Explicit theme override — wins over the OS-level prefers-color-scheme
+ * query above. Set by the ThemeToggle component via a `data-theme`
+ * attribute on <html>, persisted to localStorage. Absent the attribute,
+ * the app just follows the system setting as before.
+ */
+:root[data-theme="light"] {
+  --background: #f7f7fb;
+  --surface: #ffffff;
+  --border: #e5e4f0;
+  --foreground: #17162a;
+  --muted: #666478;
+  --accent: #4f46e5;
+  --accent-fg: #ffffff;
+}
+
+:root[data-theme="dark"] {
+  --background: #0b0b14;
+  --surface: #16151f;
+  --border: #28273a;
+  --foreground: #ececf5;
+  --muted: #92909f;
+  --accent: #818cf8;
+  --accent-fg: #1e1b4b;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);

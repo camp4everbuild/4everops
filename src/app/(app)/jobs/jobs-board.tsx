@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { EmptyState } from "@/components/ui";
 import { JobRow } from "./job-row";
+import { NewJobToggle } from "./new-job-toggle";
 import type { OpenJobWithPeople } from "@/lib/types";
 
 const SELECT_WITH_PEOPLE = "*, creator:created_by(id, full_name), claimer:claimed_by(id, full_name)";
@@ -11,10 +12,12 @@ const SELECT_WITH_PEOPLE = "*, creator:created_by(id, full_name), claimer:claime
 export function JobsBoard({
   currentUserId,
   isDirector,
+  canPost,
   initialJobs,
 }: {
   currentUserId: string;
   isDirector: boolean;
+  canPost: boolean;
   initialJobs: OpenJobWithPeople[];
 }) {
   const [jobs, setJobs] = useState(initialJobs);
@@ -68,26 +71,42 @@ export function JobsBoard({
     };
   }, []);
 
-  const active = jobs.filter((j) => j.status !== "completed");
+  const open = jobs.filter((j) => j.status === "open");
+  const assigned = jobs.filter((j) => j.status === "claimed" || j.status === "in_progress");
   const history = jobs
     .filter((j) => j.status === "completed")
     .sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? ""));
 
+  function canDelete(job: OpenJobWithPeople) {
+    return isDirector || job.created_by === currentUserId;
+  }
+
   return (
     <div className="space-y-8">
       <section>
-        <h2 className="mb-3 text-sm font-medium text-muted">Open</h2>
-        {active.length === 0 ? (
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-medium text-muted">Open jobs</h2>
+          {canPost ? <NewJobToggle /> : null}
+        </div>
+        {open.length === 0 ? (
           <EmptyState>Nothing posted right now.</EmptyState>
         ) : (
           <div className="space-y-2">
-            {active.map((job) => (
-              <JobRow
-                key={job.id}
-                job={job}
-                currentUserId={currentUserId}
-                canDelete={isDirector || job.created_by === currentUserId}
-              />
+            {open.map((job) => (
+              <JobRow key={job.id} job={job} currentUserId={currentUserId} canDelete={canDelete(job)} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-sm font-medium text-muted">Assigned jobs</h2>
+        {assigned.length === 0 ? (
+          <EmptyState>Nobody&apos;s working a job right now.</EmptyState>
+        ) : (
+          <div className="space-y-2">
+            {assigned.map((job) => (
+              <JobRow key={job.id} job={job} currentUserId={currentUserId} canDelete={canDelete(job)} />
             ))}
           </div>
         )}
@@ -98,12 +117,7 @@ export function JobsBoard({
           <h2 className="mb-3 text-sm font-medium text-muted">History</h2>
           <div className="space-y-2">
             {history.map((job) => (
-              <JobRow
-                key={job.id}
-                job={job}
-                currentUserId={currentUserId}
-                canDelete={isDirector || job.created_by === currentUserId}
-              />
+              <JobRow key={job.id} job={job} currentUserId={currentUserId} canDelete={canDelete(job)} />
             ))}
           </div>
         </section>

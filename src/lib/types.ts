@@ -196,6 +196,8 @@ export type Notification = {
     | "task_assigned"
     | "task_completed"
     | "job_posted"
+    | "job_assigned"
+    | "job_status_change"
     | "announcement"
     | "deadline"
     | "schedule_change";

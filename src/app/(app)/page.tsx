@@ -41,7 +41,7 @@ export default async function HomePage() {
 
       <div className="grid grid-cols-3 gap-3">
         <StatCard href="/tasks" icon={TasksIcon} label="My tasks" value={openTasks.length} />
-        <StatCard href="/jobs" icon={JobsIcon} label="Open jobs" value={openJobs.length} />
+        <StatCard href="/tasks" icon={JobsIcon} label="Open jobs" value={openJobs.length} />
         <StatCard href="/announcements" icon={BellIcon} label="To review" value={needsAck.length} />
       </div>
 

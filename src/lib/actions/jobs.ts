@@ -24,7 +24,7 @@ export async function createJob(input: {
 
   if (error) return { error: error.message };
 
-  revalidatePath("/jobs");
+  revalidatePath("/tasks");
   return { error: null };
 }
 
@@ -35,7 +35,7 @@ export async function claimJob(id: string): Promise<ActionResult> {
 
   if (error) return { error: error.message };
 
-  revalidatePath("/jobs");
+  revalidatePath("/tasks");
   return { error: null };
 }
 
@@ -50,7 +50,7 @@ export async function startJob(id: string): Promise<ActionResult> {
     .select("id");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/jobs");
+  if (!result.error) revalidatePath("/tasks");
   return result;
 }
 
@@ -65,7 +65,7 @@ export async function completeJob(id: string): Promise<ActionResult> {
     .select("id");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/jobs");
+  if (!result.error) revalidatePath("/tasks");
   return result;
 }
 
@@ -75,6 +75,6 @@ export async function deleteJob(id: string): Promise<ActionResult> {
   const { data, error } = await supabase.from("open_jobs").delete().eq("id", id).select("id");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/jobs");
+  if (!result.error) revalidatePath("/tasks");
   return result;
 }

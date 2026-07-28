@@ -19,6 +19,12 @@ const STATUS_ACTIVE_CLASS: Record<TaskStatus, string> = {
   completed: "bg-emerald-500 text-white shadow-sm shadow-emerald-500/30",
 };
 
+const STATUS_TILE_CLASS: Record<TaskStatus, string> = {
+  pending: "",
+  in_progress: "border-accent/30 bg-accent/5",
+  completed: "border-emerald-500/30 bg-emerald-500/5 opacity-60",
+};
+
 export function TaskRow({
   task,
   currentUserId,
@@ -78,7 +84,7 @@ export function TaskRow({
   const peopleLabel = personLabel(task, currentUserId);
 
   return (
-    <Card className={status === "completed" ? "opacity-60" : ""}>
+    <Card className={STATUS_TILE_CLASS[status]}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-medium">{task.title}</p>
