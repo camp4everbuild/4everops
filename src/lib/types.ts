@@ -209,6 +209,15 @@ export type Notification = {
   created_at: string;
 };
 
+export type PushSubscriptionRow = {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth_key: string;
+  created_at: string;
+};
+
 /** Rows joined with the assignee/creator profile, as returned by our queries. */
 export type TaskWithPeople = Task & {
   assignee: Pick<Profile, "id" | "full_name"> | null;

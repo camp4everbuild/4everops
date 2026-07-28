@@ -4,6 +4,7 @@ import { ROLE_LABELS } from "@/lib/types";
 import { LogOutIcon } from "@/components/icons";
 import { ProfileForm } from "./profile-form";
 import { ThemeToggle } from "./theme-toggle";
+import { PushToggle } from "./push-toggle";
 
 export default async function ProfilePage() {
   const profile = await requireProfile();
@@ -33,6 +34,13 @@ export default async function ProfilePage() {
             <p className="mt-2 text-xs text-muted">
               A director can change your roles from the Team page.
             </p>
+          </Card>
+        </section>
+
+        <section>
+          <h2 className="mb-3 text-sm font-medium text-muted">Notifications</h2>
+          <Card>
+            <PushToggle />
           </Card>
         </section>
 

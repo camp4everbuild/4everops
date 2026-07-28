@@ -18,11 +18,15 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Everything except static assets, image files, and the PWA manifest —
-     * the manifest in particular has to be reachable with no session at
-     * all, since the OS/browser fetches it before any user is signed in to
-     * decide whether the app is installable.
+     * Everything except static assets, image files, the PWA manifest, the
+     * service worker, and /api routes. The manifest and service worker have
+     * to be reachable with no session at all (fetched by the OS/browser
+     * before any user is signed in). /api routes check their own auth —
+     * some, like /api/push/send, are hit server-to-server by Supabase's
+     * Database Webhooks with no browser session/cookies to redirect at all,
+     * so routing them through the page-navigation auth redirect would just
+     * break the webhook rather than protect anything.
      */
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
