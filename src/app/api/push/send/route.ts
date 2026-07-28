@@ -3,8 +3,8 @@ import webpush from "web-push";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const RELATED_TABLE_URL: Record<string, string> = {
-  tasks: "/tasks",
-  open_jobs: "/tasks",
+  tasks: "/",
+  open_jobs: "/",
   checklist_items: "/today",
   checklists: "/today",
   announcements: "/announcements",

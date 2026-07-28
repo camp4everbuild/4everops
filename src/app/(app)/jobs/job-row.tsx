@@ -2,28 +2,38 @@
 
 import { useState, useTransition } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { claimJob, startJob, completeJob, deleteJob } from "@/lib/actions/jobs";
-import { Button, Card } from "@/components/ui";
-import { PersonIcon, TrashIcon } from "@/components/icons";
-import type { JobStatus, OpenJobWithPeople } from "@/lib/types";
+import { claimJob, startJob, completeJob, deleteJob, assignJob } from "@/lib/actions/jobs";
+import { Button, Card, Select } from "@/components/ui";
+import { PersonIcon, SwapIcon, TrashIcon } from "@/components/icons";
+import type { JobStatus, OpenJobWithPeople, Profile } from "@/lib/types";
 
+// See task-row.tsx's STATUS_TILE_CLASS comment — trailing `!` needed because
+// Card's own base border/bg classes otherwise win unpredictably depending on
+// where they land in Tailwind's generated stylesheet relative to each color.
 const STATUS_TILE_CLASS: Record<JobStatus, string> = {
-  open: "",
-  claimed: "border-accent/30 bg-accent/5",
-  in_progress: "border-amber-500/30 bg-amber-500/5",
-  completed: "border-emerald-500/30 bg-emerald-500/5 opacity-70",
+  open: "border-2 border-sky-500/60! bg-sky-500/10!",
+  claimed: "border-2 border-accent/60! bg-accent/10!",
+  in_progress: "border-2 border-amber-500/60! bg-amber-500/10!",
+  completed: "border-2 border-emerald-500/60! bg-emerald-500/10! opacity-70",
 };
 
 export function JobRow({
   job,
   currentUserId,
   canDelete,
+  canAssign,
+  assignableProfiles,
 }: {
   job: OpenJobWithPeople;
   currentUserId: string;
   canDelete: boolean;
+  /** Director/head — can hand this job straight to someone, or reassign it. */
+  canAssign?: boolean;
+  assignableProfiles?: Profile[];
 }) {
   const [error, setError] = useState<string | null>(null);
+  const [assigning, setAssigning] = useState(false);
+  const [assignTo, setAssignTo] = useState(job.claimed_by ?? currentUserId);
   const [isPending, startTransition] = useTransition();
 
   const isMine = job.claimed_by === currentUserId;
@@ -33,6 +43,19 @@ export function JobRow({
     startTransition(async () => {
       const result = await action();
       if (result.error) setError(result.error);
+    });
+  }
+
+  function handleAssign() {
+    if (!assignTo || assignTo === job.claimed_by) {
+      setAssigning(false);
+      return;
+    }
+    setError(null);
+    startTransition(async () => {
+      const result = await assignJob(job.id, assignTo);
+      if (result.error) setError(result.error);
+      else setAssigning(false);
     });
   }
 
@@ -61,20 +84,46 @@ export function JobRow({
           {error ? <p className="mt-1 text-xs text-red-500">{error}</p> : null}
         </div>
 
-        {canDelete && job.status !== "completed" ? (
-          <button
-            type="button"
-            aria-label="Delete job"
-            disabled={isPending}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-red-500/10 hover:text-red-500 disabled:opacity-50"
-            onClick={() => run(() => deleteJob(job.id))}
-          >
-            <TrashIcon className="h-4 w-4" />
-          </button>
-        ) : null}
+        <div className="flex shrink-0 items-center gap-1">
+          {canAssign && assignableProfiles && job.status !== "completed" ? (
+            <button
+              type="button"
+              aria-label={job.status === "open" ? "Assign job" : "Reassign job"}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-border/40 hover:text-foreground"
+              onClick={() => setAssigning((v) => !v)}
+            >
+              <SwapIcon className="h-4 w-4" />
+            </button>
+          ) : null}
+
+          {canDelete && job.status !== "completed" ? (
+            <button
+              type="button"
+              aria-label="Delete job"
+              disabled={isPending}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-red-500/10 hover:text-red-500 disabled:opacity-50"
+              onClick={() => run(() => deleteJob(job.id))}
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button>
+          ) : null}
+        </div>
       </div>
 
-      {job.status === "open" ? (
+      {assigning && assignableProfiles ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Select small className="flex-1" value={assignTo} onChange={(e) => setAssignTo(e.target.value)}>
+            {assignableProfiles.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.full_name}
+              </option>
+            ))}
+          </Select>
+          <Button disabled={isPending} onClick={handleAssign}>
+            {job.status === "open" ? "Assign" : "Reassign"}
+          </Button>
+        </div>
+      ) : job.status === "open" ? (
         <Button className="mt-3 w-full" disabled={isPending} onClick={() => run(() => claimJob(job.id))}>
           {isPending ? "Claiming…" : "On it"}
         </Button>

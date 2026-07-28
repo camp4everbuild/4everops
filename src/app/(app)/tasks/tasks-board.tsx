@@ -13,12 +13,15 @@ const SELECT_WITH_PEOPLE =
 export function TasksBoard({
   currentUserId,
   isDirector,
+  isOversight,
   initialTasks,
   assignableProfiles,
   taskCounts,
 }: {
   currentUserId: string;
   isDirector: boolean;
+  /** Director or head — sees every task and can reassign any of them. */
+  isOversight: boolean;
   initialTasks: TaskWithPeople[];
   assignableProfiles: Profile[];
   taskCounts: Record<string, number>;
@@ -88,9 +91,23 @@ export function TasksBoard({
     };
   }, [currentUserId]);
 
-  const myTasks = tasks.filter(
+  const mine = tasks.filter(
     (t) => t.assigned_to === currentUserId || t.assigned_by === currentUserId,
   );
+  const myActive = mine.filter((t) => t.status !== "completed");
+  const everyoneActive = tasks.filter((t) => t.status !== "completed");
+  const history = (isOversight ? tasks : mine)
+    .filter((t) => t.status === "completed")
+    .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+
+  function rowProps(task: TaskWithPeople) {
+    return {
+      currentUserId,
+      canDelete: isDirector || task.assigned_by === currentUserId,
+      canReassign: isOversight,
+      assignableProfiles: isOversight ? assignableProfiles : undefined,
+    };
+  }
 
   return (
     <>
@@ -105,41 +122,54 @@ export function TasksBoard({
         }
       />
 
-      <section className={isDirector ? "mb-8" : undefined}>
+      <section className="mb-8">
         <h2 className="mb-3 text-sm font-medium text-muted">My tasks</h2>
-        {myTasks.length === 0 ? (
+        {myActive.length === 0 ? (
           <EmptyState>Nothing on your plate right now.</EmptyState>
         ) : (
           <div className="space-y-2">
-            {myTasks.map((task) => (
+            {myActive.map((task) => (
               <TaskRow
                 key={`${task.id}:${task.status}:${task.notes ?? ""}`}
                 task={task}
-                currentUserId={currentUserId}
-                canDelete={isDirector || task.assigned_by === currentUserId}
+                {...rowProps(task)}
               />
             ))}
           </div>
         )}
       </section>
 
-      {isDirector ? (
-        <section>
+      {isOversight ? (
+        <section className="mb-8">
           <h2 className="mb-3 text-sm font-medium text-muted">Everyone&apos;s tasks</h2>
-          {tasks.length === 0 ? (
-            <EmptyState>No tasks yet.</EmptyState>
+          {everyoneActive.length === 0 ? (
+            <EmptyState>No active tasks right now.</EmptyState>
           ) : (
             <div className="space-y-2">
-              {tasks.map((task) => (
+              {everyoneActive.map((task) => (
                 <TaskRow
                   key={`all:${task.id}:${task.status}:${task.notes ?? ""}`}
                   task={task}
-                  currentUserId={currentUserId}
-                  canDelete
+                  {...rowProps(task)}
                 />
               ))}
             </div>
           )}
+        </section>
+      ) : null}
+
+      {history.length > 0 ? (
+        <section>
+          <h2 className="mb-3 text-sm font-medium text-muted">History</h2>
+          <div className="space-y-2">
+            {history.map((task) => (
+              <TaskRow
+                key={`history:${task.id}:${task.status}:${task.notes ?? ""}`}
+                task={task}
+                {...rowProps(task)}
+              />
+            ))}
+          </div>
         </section>
       ) : null}
     </>

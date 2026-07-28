@@ -205,6 +205,15 @@ export function TrashIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function SwapIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M7 8h11l-3-3" />
+      <path d="M17 16H6l3 3" />
+    </Icon>
+  );
+}
+
 export function PencilIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

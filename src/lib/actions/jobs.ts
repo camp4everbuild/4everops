@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canPostJobs, requireProfile } from "@/lib/auth";
+import { canPostJobs, isOversight, requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { mutationResult, type ActionResult } from "./types";
 
@@ -24,7 +24,7 @@ export async function createJob(input: {
 
   if (error) return { error: error.message };
 
-  revalidatePath("/tasks");
+  revalidatePath("/");
   return { error: null };
 }
 
@@ -35,7 +35,7 @@ export async function claimJob(id: string): Promise<ActionResult> {
 
   if (error) return { error: error.message };
 
-  revalidatePath("/tasks");
+  revalidatePath("/");
   return { error: null };
 }
 
@@ -50,7 +50,7 @@ export async function startJob(id: string): Promise<ActionResult> {
     .select("id");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/tasks");
+  if (!result.error) revalidatePath("/");
   return result;
 }
 
@@ -65,7 +65,26 @@ export async function completeJob(id: string): Promise<ActionResult> {
     .select("id");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/tasks");
+  if (!result.error) revalidatePath("/");
+  return result;
+}
+
+/** Director/head hands a job straight to someone — skips the claim step, and can reassign an already-claimed job to someone else. */
+export async function assignJob(id: string, assigneeId: string): Promise<ActionResult> {
+  const profile = await requireProfile();
+  if (!isOversight(profile)) return { error: "Only a director or head can assign jobs." };
+  if (!assigneeId) return { error: "Pick who this job is for." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("open_jobs")
+    .update({ status: "claimed", claimed_by: assigneeId, claimed_at: new Date().toISOString() })
+    .eq("id", id)
+    .neq("status", "completed")
+    .select("id");
+
+  const result = mutationResult(data, error);
+  if (!result.error) revalidatePath("/");
   return result;
 }
 
@@ -75,6 +94,6 @@ export async function deleteJob(id: string): Promise<ActionResult> {
   const { data, error } = await supabase.from("open_jobs").delete().eq("id", id).select("id");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/tasks");
+  if (!result.error) revalidatePath("/");
   return result;
 }

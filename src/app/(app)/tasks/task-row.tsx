@@ -2,10 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { format, formatDistanceToNow } from "date-fns";
-import { updateTaskStatus, updateTaskNotes, deleteTask } from "@/lib/actions/tasks";
-import { Card, PriorityBadge, textareaClass } from "@/components/ui";
-import { CalendarIcon, PersonIcon, PencilIcon, TrashIcon } from "@/components/icons";
-import type { TaskStatus, TaskWithPeople } from "@/lib/types";
+import { updateTaskStatus, updateTaskNotes, deleteTask, reassignTask } from "@/lib/actions/tasks";
+import { Card, PriorityBadge, Select, textareaClass } from "@/components/ui";
+import { CalendarIcon, PersonIcon, PencilIcon, SwapIcon, TrashIcon } from "@/components/icons";
+import type { Profile, TaskStatus, TaskWithPeople } from "@/lib/types";
 
 const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
   { value: "pending", label: "Pending" },
@@ -19,24 +19,35 @@ const STATUS_ACTIVE_CLASS: Record<TaskStatus, string> = {
   completed: "bg-emerald-500 text-white shadow-sm shadow-emerald-500/30",
 };
 
+// Card's own base classes (border-border, bg-surface) land at an arbitrary
+// point in Tailwind's alphabetically-generated stylesheet — for some status
+// colors that's before these, for others after, so plain utility classes win
+// unpredictably. The trailing `!` forces these to always win regardless.
 const STATUS_TILE_CLASS: Record<TaskStatus, string> = {
-  pending: "",
-  in_progress: "border-accent/30 bg-accent/5",
-  completed: "border-emerald-500/30 bg-emerald-500/5 opacity-60",
+  pending: "border-2 border-slate-400/60! bg-slate-400/10! dark:border-slate-500/60! dark:bg-slate-400/[0.08]!",
+  in_progress: "border-2 border-accent/60! bg-accent/10!",
+  completed: "border-2 border-emerald-500/60! bg-emerald-500/10! opacity-70",
 };
 
 export function TaskRow({
   task,
   currentUserId,
   canDelete,
+  canReassign,
+  assignableProfiles,
 }: {
   task: TaskWithPeople;
   /** Whose screen this is — decides whether we show "From X", "To X", or "X → Y" (director oversight). */
   currentUserId: string;
   canDelete?: boolean;
+  /** Director/head — can hand this task to a different person. */
+  canReassign?: boolean;
+  assignableProfiles?: Profile[];
 }) {
   const [status, setStatus] = useState<TaskStatus>(task.status);
   const [editingNotes, setEditingNotes] = useState(false);
+  const [reassigning, setReassigning] = useState(false);
+  const [reassignTo, setReassignTo] = useState(task.assigned_to);
   const [notes, setNotes] = useState(task.notes ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -74,6 +85,18 @@ export function TaskRow({
     startTransition(async () => {
       const result = await deleteTask(task.id);
       if (result.error) setError(result.error);
+    });
+  }
+
+  function handleReassign() {
+    if (!reassignTo || reassignTo === task.assigned_to) {
+      setReassigning(false);
+      return;
+    }
+    startTransition(async () => {
+      const result = await reassignTask(task.id, reassignTo);
+      if (result.error) setError(result.error);
+      else setReassigning(false);
     });
   }
 
@@ -127,10 +150,23 @@ export function TaskRow({
           })}
         </div>
 
+        {canReassign && assignableProfiles ? (
+          <button
+            type="button"
+            aria-label="Reassign task"
+            className="ml-auto flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-border/40 hover:text-foreground"
+            onClick={() => setReassigning((v) => !v)}
+          >
+            <SwapIcon className="h-4 w-4" />
+          </button>
+        ) : null}
+
         <button
           type="button"
           aria-label={task.notes ? "Edit notes" : "Add notes"}
-          className="ml-auto flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-border/40 hover:text-foreground"
+          className={`flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-border/40 hover:text-foreground ${
+            canReassign && assignableProfiles ? "" : "ml-auto"
+          }`}
           onClick={() => setEditingNotes((v) => !v)}
         >
           <PencilIcon className="h-4 w-4" />
@@ -170,6 +206,31 @@ export function TaskRow({
             onClick={handleSaveNotes}
           >
             Save notes
+          </button>
+        </div>
+      ) : null}
+
+      {reassigning && assignableProfiles ? (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Select
+            small
+            className="flex-1"
+            value={reassignTo}
+            onChange={(e) => setReassignTo(e.target.value)}
+          >
+            {assignableProfiles.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.full_name}
+              </option>
+            ))}
+          </Select>
+          <button
+            type="button"
+            className="text-xs font-medium text-accent hover:opacity-80 disabled:opacity-50"
+            disabled={isPending}
+            onClick={handleReassign}
+          >
+            Reassign
           </button>
         </div>
       ) : null}

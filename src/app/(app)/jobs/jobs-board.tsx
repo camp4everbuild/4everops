@@ -5,20 +5,25 @@ import { createClient } from "@/lib/supabase/client";
 import { EmptyState } from "@/components/ui";
 import { JobRow } from "./job-row";
 import { NewJobToggle } from "./new-job-toggle";
-import type { OpenJobWithPeople } from "@/lib/types";
+import type { OpenJobWithPeople, Profile } from "@/lib/types";
 
 const SELECT_WITH_PEOPLE = "*, creator:created_by(id, full_name), claimer:claimed_by(id, full_name)";
 
 export function JobsBoard({
   currentUserId,
   isDirector,
+  isOversight,
   canPost,
   initialJobs,
+  assignableProfiles,
 }: {
   currentUserId: string;
   isDirector: boolean;
+  /** Director or head — can assign/reassign jobs directly. */
+  isOversight: boolean;
   canPost: boolean;
   initialJobs: OpenJobWithPeople[];
+  assignableProfiles: Profile[];
 }) {
   const [jobs, setJobs] = useState(initialJobs);
 
@@ -93,7 +98,14 @@ export function JobsBoard({
         ) : (
           <div className="space-y-2">
             {open.map((job) => (
-              <JobRow key={job.id} job={job} currentUserId={currentUserId} canDelete={canDelete(job)} />
+              <JobRow
+                key={job.id}
+                job={job}
+                currentUserId={currentUserId}
+                canDelete={canDelete(job)}
+                canAssign={isOversight}
+                assignableProfiles={assignableProfiles}
+              />
             ))}
           </div>
         )}
@@ -106,7 +118,14 @@ export function JobsBoard({
         ) : (
           <div className="space-y-2">
             {assigned.map((job) => (
-              <JobRow key={job.id} job={job} currentUserId={currentUserId} canDelete={canDelete(job)} />
+              <JobRow
+                key={job.id}
+                job={job}
+                currentUserId={currentUserId}
+                canDelete={canDelete(job)}
+                canAssign={isOversight}
+                assignableProfiles={assignableProfiles}
+              />
             ))}
           </div>
         )}
@@ -117,7 +136,14 @@ export function JobsBoard({
           <h2 className="mb-3 text-sm font-medium text-muted">History</h2>
           <div className="space-y-2">
             {history.map((job) => (
-              <JobRow key={job.id} job={job} currentUserId={currentUserId} canDelete={canDelete(job)} />
+              <JobRow
+                key={job.id}
+                job={job}
+                currentUserId={currentUserId}
+                canDelete={canDelete(job)}
+                canAssign={isOversight}
+                assignableProfiles={assignableProfiles}
+              />
             ))}
           </div>
         </section>

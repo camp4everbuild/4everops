@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 import { OVERSIGHT_ROLES, type UserRole } from "@/lib/types";
-import { HomeIcon, CalendarIcon, TasksIcon, TeamIcon } from "@/components/icons";
+import { HomeIcon, CalendarIcon, TeamIcon } from "@/components/icons";
 
 const ITEMS: {
   href: string;
@@ -14,7 +14,6 @@ const ITEMS: {
 }[] = [
   { href: "/", label: "Home", icon: HomeIcon },
   { href: "/today", label: "Today", icon: CalendarIcon },
-  { href: "/tasks", label: "Tasks", icon: TasksIcon },
   { href: "/team", label: "Team", icon: TeamIcon, roles: OVERSIGHT_ROLES },
 ];
 
