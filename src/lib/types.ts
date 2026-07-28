@@ -129,7 +129,12 @@ export type ScheduleStop = {
   notes: string | null;
   sort_order: number;
   created_by: string;
+  assigned_to: string | null;
   created_at: string;
+};
+
+export type ScheduleStopWithAssignee = ScheduleStop & {
+  assignee: Pick<Profile, "id" | "full_name"> | null;
 };
 
 /** A CSV row waiting for a director/head to post it as an open job or assign it to someone — nothing here is staff-facing yet. */
@@ -142,14 +147,17 @@ export type PendingImport = {
   created_at: string;
 };
 
-export type CotLoan = {
+/** A physical, numbered cot/mattress — a fixed roster, not an event log. Checked out/in, not "logged" per use. */
+export type Cot = {
   id: string;
-  room_or_group: string;
-  given_at: string;
-  given_by: string;
+  number: number;
+  is_out: boolean;
+  room_or_group: string | null;
+  given_at: string | null;
+  given_by: string | null;
   returned_at: string | null;
   returned_by: string | null;
-  notes: string | null;
+  created_at: string;
 };
 
 export type Camper = {

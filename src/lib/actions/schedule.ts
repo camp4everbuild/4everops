@@ -12,6 +12,7 @@ export async function addScheduleStop(input: {
   time: string | null;
   notes: string | null;
   sortOrder: number;
+  assignedTo: string | null;
 }): Promise<ActionResult> {
   const profile = await requireProfile();
   if (!isOversight(profile)) return { error: "Only a director or head can edit the schedule." };
@@ -28,6 +29,7 @@ export async function addScheduleStop(input: {
     time: input.time,
     notes: input.notes?.trim() || null,
     sort_order: input.sortOrder,
+    assigned_to: input.assignedTo,
     created_by: profile.id,
   });
 
@@ -35,6 +37,22 @@ export async function addScheduleStop(input: {
 
   revalidatePath("/today");
   return { error: null };
+}
+
+export async function assignScheduleStop(id: string, assigneeId: string | null): Promise<ActionResult> {
+  const profile = await requireProfile();
+  if (!isOversight(profile)) return { error: "Only a director or head can edit the schedule." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("schedule_stops")
+    .update({ assigned_to: assigneeId })
+    .eq("id", id)
+    .select("id");
+
+  const result = mutationResult(data, error);
+  if (!result.error) revalidatePath("/today");
+  return result;
 }
 
 /** Replaces a day's stops in one shot from a parsed CSV — simpler than merging row-by-row against whatever's already there. */

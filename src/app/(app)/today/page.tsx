@@ -2,26 +2,28 @@ import { isOversight, requireProfile } from "@/lib/auth";
 import { getTodayChecklist, getChecklistItems, getTemplates } from "@/lib/queries/checklists";
 import { getAllProfiles } from "@/lib/queries/profiles";
 import { getScheduleStops } from "@/lib/queries/schedule";
-import { getOutstandingCots } from "@/lib/queries/cots";
+import { getAllCots } from "@/lib/queries/cots";
 import { PageHeader, EmptyState } from "@/components/ui";
 import { TodayBoard } from "./today-board";
 import { StartToday } from "./start-today";
 import { ScheduleSection } from "./schedule-section";
 import { CotsSection } from "./cots-section";
+import { TodayTabs } from "./today-tabs";
 
 export default async function TodayPage() {
   const profile = await requireProfile();
   const oversight = isOversight(profile);
   const today = new Date().toISOString().slice(0, 10);
 
-  const [checklist, stops, cots] = await Promise.all([
+  const [checklist, stops, cots, activeProfiles] = await Promise.all([
     getTodayChecklist(),
     getScheduleStops(today),
-    getOutstandingCots(),
+    getAllCots(),
+    getAllProfiles().then((profiles) => profiles.filter((p) => p.status === "active")),
   ]);
 
   return (
-    <div className="space-y-8">
+    <div>
       <PageHeader
         title="Today"
         subtitle={new Date().toLocaleDateString(undefined, {
@@ -31,22 +33,31 @@ export default async function TodayPage() {
         })}
       />
 
-      {checklist ? (
-        <TodayBoard
-          checklistId={checklist.id}
-          initialItems={await getChecklistItems(checklist.id)}
-          isOversightUser={oversight}
-          activeProfiles={(await getAllProfiles()).filter((p) => p.status === "active")}
-        />
-      ) : oversight ? (
-        <StartToday templates={await getTemplates()} />
-      ) : (
-        <EmptyState>Nothing started yet today — check back soon.</EmptyState>
-      )}
-
-      <ScheduleSection travelDate={today} stops={stops} canManage={oversight} />
-
-      <CotsSection cots={cots} />
+      <TodayTabs
+        checklist={
+          checklist ? (
+            <TodayBoard
+              checklistId={checklist.id}
+              initialItems={await getChecklistItems(checklist.id)}
+              isOversightUser={oversight}
+              activeProfiles={activeProfiles}
+            />
+          ) : oversight ? (
+            <StartToday templates={await getTemplates()} />
+          ) : (
+            <EmptyState>Nothing started yet today — check back soon.</EmptyState>
+          )
+        }
+        schedule={
+          <ScheduleSection
+            travelDate={today}
+            initialStops={stops}
+            assignableProfiles={activeProfiles}
+            canManage={oversight}
+          />
+        }
+        cots={<CotsSection initialCots={cots} canManage={oversight} />}
+      />
     </div>
   );
 }

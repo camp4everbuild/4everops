@@ -134,6 +134,37 @@ export function Select({
   );
 }
 
+/** Full-width segmented tab control — controlled, so callers own where the active tab lives (local state, or split across two data sources like Home's board). */
+export function TabBar<T extends string>({
+  tabs,
+  value,
+  onChange,
+}: {
+  tabs: { id: T; label: string }[];
+  value: T;
+  onChange: (id: T) => void;
+}) {
+  return (
+    <div className="mb-5 flex items-center gap-0.5 rounded-full bg-border/40 p-1">
+      {tabs.map((tab) => {
+        const active = tab.id === value;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => onChange(tab.id)}
+            className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition active:scale-[0.97] ${
+              active ? "bg-accent text-accent-fg shadow-sm shadow-accent/30" : "text-muted hover:text-foreground"
+            }`}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Badge({
   children,
   tone = "neutral",

@@ -4,8 +4,7 @@ import { getMyTasks, getAllTasks, getOpenTaskCounts } from "@/lib/queries/tasks"
 import { getAllProfiles } from "@/lib/queries/profiles";
 import { getOpenJobs } from "@/lib/queries/jobs";
 import { getAnnouncements } from "@/lib/queries/announcements";
-import { TasksBoard } from "./tasks/tasks-board";
-import { JobsBoard } from "./jobs/jobs-board";
+import { HomeBoard } from "./home-board";
 import { Greeting } from "./greeting";
 
 export default async function HomePage() {
@@ -39,25 +38,16 @@ export default async function HomePage() {
         </Link>
       ) : null}
 
-      <TasksBoard
+      <HomeBoard
         currentUserId={profile.id}
         isDirector={director}
         isOversight={oversight}
+        canPost={canPostJobs(profile)}
         initialTasks={initialTasks}
+        initialJobs={jobs}
         assignableProfiles={assignableProfiles}
         taskCounts={taskCounts}
       />
-
-      <div className="border-t border-border pt-8">
-        <JobsBoard
-          currentUserId={profile.id}
-          isDirector={director}
-          isOversight={oversight}
-          canPost={canPostJobs(profile)}
-          initialJobs={jobs}
-          assignableProfiles={assignableProfiles}
-        />
-      </div>
     </div>
   );
 }

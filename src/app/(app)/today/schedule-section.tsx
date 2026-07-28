@@ -1,33 +1,81 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { addScheduleStop, deleteScheduleStop, importScheduleStops } from "@/lib/actions/schedule";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { createClient } from "@/lib/supabase/client";
+import {
+  addScheduleStop,
+  assignScheduleStop,
+  deleteScheduleStop,
+  importScheduleStops,
+} from "@/lib/actions/schedule";
 import { parseCsvWithHeader } from "@/lib/csv";
 import { mapsUrl, wazeUrl } from "@/lib/maps";
-import { Button, Card, EmptyState, ErrorText, Field, inputClass, textareaClass } from "@/components/ui";
+import { Button, Card, EmptyState, ErrorText, Field, Select, inputClass, textareaClass } from "@/components/ui";
 import { Modal } from "@/components/modal";
-import { PinIcon, TrashIcon } from "@/components/icons";
-import type { ScheduleStop } from "@/lib/types";
+import { PersonIcon, PinIcon, SwapIcon, TrashIcon } from "@/components/icons";
+import type { Profile, ScheduleStopWithAssignee } from "@/lib/types";
+
+const SELECT_WITH_ASSIGNEE = "*, assignee:assigned_to(id, full_name)";
 
 export function ScheduleSection({
   travelDate,
-  stops,
+  initialStops,
+  assignableProfiles,
   canManage,
 }: {
   travelDate: string;
-  stops: ScheduleStop[];
+  initialStops: ScheduleStopWithAssignee[];
+  assignableProfiles: Profile[];
   canManage: boolean;
 }) {
-  const router = useRouter();
+  const [stops, setStops] = useState(initialStops);
   const [open, setOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [, startTransition] = useTransition();
 
+  useEffect(() => {
+    const supabase = createClient();
+
+    async function fetchFull(id: string) {
+      const { data } = await supabase
+        .from("schedule_stops")
+        .select(SELECT_WITH_ASSIGNEE)
+        .eq("id", id)
+        .maybeSingle();
+      if (data) {
+        const full = data as unknown as ScheduleStopWithAssignee;
+        setStops((current) =>
+          current.some((s) => s.id === full.id)
+            ? current.map((s) => (s.id === full.id ? full : s))
+            : [...current, full].sort((a, b) => a.sort_order - b.sort_order),
+        );
+      }
+    }
+
+    const channel = supabase
+      .channel(`schedule-${travelDate}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "schedule_stops", filter: `travel_date=eq.${travelDate}` },
+        (payload) => {
+          if (payload.eventType === "DELETE") {
+            const oldRow = payload.old as { id: string };
+            setStops((current) => current.filter((s) => s.id !== oldRow.id));
+            return;
+          }
+          fetchFull((payload.new as { id: string }).id);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [travelDate]);
+
   function handleDelete(id: string) {
     startTransition(async () => {
       await deleteScheduleStop(id);
-      router.refresh();
     });
   }
 
@@ -60,51 +108,13 @@ export function ScheduleSection({
       ) : (
         <div className="space-y-2">
           {stops.map((stop) => (
-            <Card key={stop.id}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-medium">
-                    {stop.label}
-                    {stop.time ? (
-                      <span className="ml-2 text-xs font-normal text-muted">{stop.time}</span>
-                    ) : null}
-                  </p>
-                  <p className="mt-0.5 flex items-center gap-1 text-sm text-muted">
-                    <PinIcon className="h-3.5 w-3.5 shrink-0" />
-                    {stop.address}
-                  </p>
-                  {stop.notes ? <p className="mt-1 text-xs text-muted">{stop.notes}</p> : null}
-                </div>
-                {canManage ? (
-                  <button
-                    type="button"
-                    aria-label="Delete stop"
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-red-500/10 hover:text-red-500"
-                    onClick={() => handleDelete(stop.id)}
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                ) : null}
-              </div>
-              <div className="mt-3 flex gap-2">
-                <a
-                  href={mapsUrl(stop.address)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-9 flex-1 items-center justify-center rounded-lg border border-border bg-surface px-3 text-xs font-medium transition hover:bg-border/40"
-                >
-                  Google Maps
-                </a>
-                <a
-                  href={wazeUrl(stop.address)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-9 flex-1 items-center justify-center rounded-lg border border-border bg-surface px-3 text-xs font-medium transition hover:bg-border/40"
-                >
-                  Waze
-                </a>
-              </div>
-            </Card>
+            <StopCard
+              key={stop.id}
+              stop={stop}
+              assignableProfiles={assignableProfiles}
+              canManage={canManage}
+              onDelete={() => handleDelete(stop.id)}
+            />
           ))}
         </div>
       )}
@@ -115,10 +125,8 @@ export function ScheduleSection({
             <AddStopForm
               travelDate={travelDate}
               nextSortOrder={stops.length}
-              onDone={() => {
-                requestClose();
-                router.refresh();
-              }}
+              assignableProfiles={assignableProfiles}
+              onDone={requestClose}
             />
           )}
         </Modal>
@@ -126,18 +134,118 @@ export function ScheduleSection({
 
       {importOpen ? (
         <Modal title="Import today's schedule" onClose={() => setImportOpen(false)}>
-          {(requestClose) => (
-            <ImportStopsForm
-              travelDate={travelDate}
-              onDone={() => {
-                requestClose();
-                router.refresh();
-              }}
-            />
-          )}
+          {(requestClose) => <ImportStopsForm travelDate={travelDate} onDone={requestClose} />}
         </Modal>
       ) : null}
     </section>
+  );
+}
+
+function StopCard({
+  stop,
+  assignableProfiles,
+  canManage,
+  onDelete,
+}: {
+  stop: ScheduleStopWithAssignee;
+  assignableProfiles: Profile[];
+  canManage: boolean;
+  onDelete: () => void;
+}) {
+  const [assigning, setAssigning] = useState(false);
+  const [assignTo, setAssignTo] = useState(stop.assigned_to ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleAssign() {
+    setError(null);
+    startTransition(async () => {
+      const result = await assignScheduleStop(stop.id, assignTo || null);
+      if (result.error) setError(result.error);
+      else setAssigning(false);
+    });
+  }
+
+  return (
+    <Card>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-medium">
+            {stop.label}
+            {stop.time ? <span className="ml-2 text-xs font-normal text-muted">{stop.time}</span> : null}
+          </p>
+          <p className="mt-0.5 flex items-center gap-1 text-sm text-muted">
+            <PinIcon className="h-3.5 w-3.5 shrink-0" />
+            {stop.address}
+          </p>
+          {stop.notes ? <p className="mt-1 text-xs text-muted">{stop.notes}</p> : null}
+          {stop.assignee ? (
+            <p className="mt-1 flex items-center gap-1 text-xs text-muted">
+              <PersonIcon className="h-3.5 w-3.5" />
+              {stop.assignee.full_name}
+            </p>
+          ) : null}
+        </div>
+
+        {canManage ? (
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              aria-label="Assign stop"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-border/40 hover:text-foreground"
+              onClick={() => setAssigning((v) => !v)}
+            >
+              <SwapIcon className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              aria-label="Delete stop"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-red-500/10 hover:text-red-500"
+              onClick={onDelete}
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      {assigning ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Select small className="min-w-0 flex-1" value={assignTo} onChange={(e) => setAssignTo(e.target.value)}>
+            <option value="">Unassigned</option>
+            {assignableProfiles.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.full_name}
+              </option>
+            ))}
+          </Select>
+          <Button disabled={isPending} onClick={handleAssign}>
+            Save
+          </Button>
+        </div>
+      ) : null}
+
+      <ErrorText>{error}</ErrorText>
+
+      <div className="mt-3 flex gap-2">
+        <a
+          href={mapsUrl(stop.address)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-9 flex-1 items-center justify-center rounded-lg border border-border bg-surface px-3 text-xs font-medium transition hover:bg-border/40"
+        >
+          Google Maps
+        </a>
+        <a
+          href={wazeUrl(stop.address)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-9 flex-1 items-center justify-center rounded-lg border border-border bg-surface px-3 text-xs font-medium transition hover:bg-border/40"
+        >
+          Waze
+        </a>
+      </div>
+    </Card>
   );
 }
 
@@ -213,16 +321,19 @@ function ImportStopsForm({
 function AddStopForm({
   travelDate,
   nextSortOrder,
+  assignableProfiles,
   onDone,
 }: {
   travelDate: string;
   nextSortOrder: number;
+  assignableProfiles: Profile[];
   onDone: () => void;
 }) {
   const [label, setLabel] = useState("");
   const [address, setAddress] = useState("");
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -237,6 +348,7 @@ function AddStopForm({
         time: time || null,
         notes: notes || null,
         sortOrder: nextSortOrder,
+        assignedTo: assignedTo || null,
       });
       if (result.error) {
         setError(result.error);
@@ -267,9 +379,22 @@ function AddStopForm({
         />
       </Field>
 
-      <Field label="Time" hint="Optional">
-        <input className={inputClass} type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Time" hint="Optional">
+          <input className={inputClass} type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+        </Field>
+
+        <Field label="Assign to" hint="Optional">
+          <Select value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
+            <option value="">Unassigned</option>
+            {assignableProfiles.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.full_name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </div>
 
       <Field label="Notes" hint="Optional">
         <textarea className={textareaClass} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />

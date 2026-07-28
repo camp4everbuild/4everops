@@ -1,16 +1,18 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
-import type { ScheduleStop } from "@/lib/types";
+import type { ScheduleStopWithAssignee } from "@/lib/types";
 
-export async function getScheduleStops(travelDate: string): Promise<ScheduleStop[]> {
+const SELECT_WITH_ASSIGNEE = "*, assignee:assigned_to(id, full_name)";
+
+export async function getScheduleStops(travelDate: string): Promise<ScheduleStopWithAssignee[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("schedule_stops")
-    .select("*")
+    .select(SELECT_WITH_ASSIGNEE)
     .eq("travel_date", travelDate)
     .order("sort_order", { ascending: true });
 
   if (error) throw error;
-  return (data ?? []) as ScheduleStop[];
+  return (data ?? []) as unknown as ScheduleStopWithAssignee[];
 }
