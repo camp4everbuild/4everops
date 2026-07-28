@@ -9,11 +9,11 @@ import {
   importScheduleStops,
 } from "@/lib/actions/schedule";
 import { parseCsvWithHeader } from "@/lib/csv";
-import { mapsUrl, wazeUrl } from "@/lib/maps";
 import { Button, Card, EmptyState, ErrorText, Field, Select, inputClass, textareaClass } from "@/components/ui";
 import { Modal } from "@/components/modal";
-import { ContactIcons } from "@/components/contact-icons";
-import { GoogleMapsLogo, PersonIcon, PinIcon, SwapIcon, TrashIcon, WazeLogo } from "@/components/icons";
+import { ActionRow } from "@/components/action-row";
+import { PersonIcon, PinIcon, SwapIcon, TrashIcon } from "@/components/icons";
+import { useSyncedState } from "@/lib/use-synced-state";
 import type { Profile, ScheduleStopWithAssignee } from "@/lib/types";
 
 const SELECT_WITH_ASSIGNEE = "*, assignee:assigned_to(id, full_name, phone)";
@@ -29,7 +29,7 @@ export function ScheduleSection({
   assignableProfiles: Profile[];
   canManage: boolean;
 }) {
-  const [stops, setStops] = useState(initialStops);
+  const [stops, setStops] = useSyncedState(initialStops);
   const [open, setOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [, startTransition] = useTransition();
@@ -72,7 +72,7 @@ export function ScheduleSection({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [travelDate]);
+  }, [travelDate, setStops]);
 
   function handleDelete(id: string) {
     startTransition(async () => {
@@ -184,7 +184,6 @@ function StopCard({
             <p className="mt-1 flex items-center gap-1 text-xs text-muted">
               <PersonIcon className="h-3.5 w-3.5" />
               {stop.assignee.full_name}
-              <ContactIcons phone={stop.assignee.phone} />
             </p>
           ) : null}
         </div>
@@ -229,26 +228,7 @@ function StopCard({
 
       <ErrorText>{error}</ErrorText>
 
-      <div className="mt-3 flex gap-2">
-        <a
-          href={mapsUrl(stop.address)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-xs font-medium transition hover:bg-border/40"
-        >
-          <GoogleMapsLogo width={14} height={14} />
-          Maps
-        </a>
-        <a
-          href={wazeUrl(stop.address)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-xs font-medium transition hover:bg-border/40"
-        >
-          <WazeLogo width={14} height={14} />
-          Waze
-        </a>
-      </div>
+      <ActionRow phone={stop.assignee?.phone} mapsQuery={stop.address} />
     </Card>
   );
 }

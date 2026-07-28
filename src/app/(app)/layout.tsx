@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { HeaderThemeToggle } from "@/components/header-theme-toggle";
 import { NotificationBell } from "@/components/notification-bell";
 import { PushPrompt } from "@/components/push-prompt";
+import { VisibilityRefresh } from "@/components/visibility-refresh";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({
@@ -51,6 +52,7 @@ export default async function AppLayout({
         </div>
       </header>
 
+      <VisibilityRefresh />
       <PushPrompt />
 
       <main className="shell-content flex-1 py-5 pb-28">{children}</main>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { BellIcon } from "@/components/icons";
+import { useSyncedState } from "@/lib/use-synced-state";
 
 export function NotificationBell({
   userId,
@@ -12,7 +13,7 @@ export function NotificationBell({
   userId: string;
   initialUnread: number;
 }) {
-  const [unread, setUnread] = useState(initialUnread);
+  const [unread, setUnread] = useSyncedState(initialUnread);
 
   useEffect(() => {
     const supabase = createClient();
@@ -46,7 +47,7 @@ export function NotificationBell({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, setUnread]);
 
   return (
     <Link

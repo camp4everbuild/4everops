@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { EmptyState } from "@/components/ui";
+import { useSyncedState } from "@/lib/use-synced-state";
 import { DEPARTMENT_LABELS, ROLE_DEPARTMENT, type ChecklistItemWithAssignee, type Department, type Profile } from "@/lib/types";
 import { ChecklistItemRow } from "./checklist-item-row";
 
@@ -19,7 +20,7 @@ export function TodayBoard({
   isOversightUser: boolean;
   activeProfiles: Profile[];
 }) {
-  const [items, setItems] = useState(initialItems);
+  const [items, setItems] = useSyncedState(initialItems);
 
   useEffect(() => {
     const supabase = createClient();
@@ -72,7 +73,7 @@ export function TodayBoard({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [checklistId]);
+  }, [checklistId, setItems]);
 
   const departments = Array.from(new Set(items.map((i) => i.department))) as Department[];
 

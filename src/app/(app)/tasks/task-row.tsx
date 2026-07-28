@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import { updateTaskStatus, updateTaskNotes, deleteTask, reassignTask } from "@/lib/actions/tasks";
 import { Card, PriorityBadge, Select, textareaClass } from "@/components/ui";
-import { ContactIcons } from "@/components/contact-icons";
+import { ActionRow } from "@/components/action-row";
 import { CalendarIcon, PersonIcon, PencilIcon, SwapIcon, TrashIcon } from "@/components/icons";
 import type { Profile, TaskStatus, TaskWithPeople } from "@/lib/types";
 
@@ -124,7 +124,6 @@ export function TaskRow({
               <span className="inline-flex items-center gap-1">
                 <PersonIcon className="h-3.5 w-3.5" />
                 {person.label}
-                <ContactIcons phone={person.contact?.phone} />
               </span>
             ) : null}
           </div>
@@ -238,6 +237,8 @@ export function TaskRow({
       ) : null}
 
       {error ? <p className="mt-2 text-xs text-red-500">{error}</p> : null}
+
+      <ActionRow phone={person?.contact?.phone} />
     </Card>
   );
 }

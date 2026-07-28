@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { EmptyState } from "@/components/ui";
+import { useSyncedState } from "@/lib/use-synced-state";
 import { CsvUploadForm } from "./csv-upload-form";
 import { ImportRow } from "./import-row";
 import type { PendingImport, Profile } from "@/lib/types";
@@ -14,7 +15,7 @@ export function ImportsBoard({
   initialItems: PendingImport[];
   assignableProfiles: Profile[];
 }) {
-  const [items, setItems] = useState(initialItems);
+  const [items, setItems] = useSyncedState(initialItems);
 
   useEffect(() => {
     const supabase = createClient();
@@ -46,7 +47,7 @@ export function ImportsBoard({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [setItems]);
 
   const batches = Array.from(new Set(items.map((i) => i.batch_label)));
 

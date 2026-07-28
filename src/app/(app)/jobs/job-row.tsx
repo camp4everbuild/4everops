@@ -3,10 +3,9 @@
 import { useState, useTransition } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { claimJob, startJob, completeJob, deleteJob, assignJob } from "@/lib/actions/jobs";
-import { mapsUrl, wazeUrl } from "@/lib/maps";
 import { Button, Card, Select } from "@/components/ui";
-import { ContactIcons } from "@/components/contact-icons";
-import { GoogleMapsLogo, PersonIcon, SwapIcon, TrashIcon, WazeLogo } from "@/components/icons";
+import { ActionRow } from "@/components/action-row";
+import { PersonIcon, SwapIcon, TrashIcon } from "@/components/icons";
 import type { JobStatus, OpenJobWithPeople, Profile } from "@/lib/types";
 
 // Each button is tinted toward the status it moves the job *into* — same
@@ -83,7 +82,6 @@ export function JobRow({
               <span className="inline-flex items-center gap-1">
                 <PersonIcon className="h-3.5 w-3.5" />
                 {job.claimer.full_name}
-                <ContactIcons phone={job.claimer.phone} />
               </span>
             ) : null}
             {job.status === "completed" && job.completed_at ? (
@@ -160,26 +158,7 @@ export function JobRow({
         </Button>
       ) : null}
 
-      <div className="mt-2 flex gap-2">
-        <a
-          href={mapsUrl(job.title)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-xs font-medium transition hover:bg-border/40"
-        >
-          <GoogleMapsLogo width={14} height={14} />
-          Maps
-        </a>
-        <a
-          href={wazeUrl(job.title)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-xs font-medium transition hover:bg-border/40"
-        >
-          <WazeLogo width={14} height={14} />
-          Waze
-        </a>
-      </div>
+      <ActionRow phone={job.claimer?.phone} mapsQuery={job.title} />
     </Card>
   );
 }

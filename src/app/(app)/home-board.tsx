@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { EmptyState, TabBar } from "@/components/ui";
+import { useSyncedState } from "@/lib/use-synced-state";
 import { NewTaskToggle } from "./tasks/new-task-toggle";
 import { TaskRow } from "./tasks/task-row";
 import { NewJobToggle } from "./jobs/new-job-toggle";
@@ -36,8 +37,8 @@ export function HomeBoard({
   taskCounts: Record<string, number>;
 }) {
   const [tab, setTab] = useState<Tab>("assigned");
-  const [tasks, setTasks] = useState(initialTasks);
-  const [jobs, setJobs] = useState(initialJobs);
+  const [tasks, setTasks] = useSyncedState(initialTasks);
+  const [jobs, setJobs] = useSyncedState(initialJobs);
 
   useEffect(() => {
     const supabase = createClient();
@@ -126,7 +127,7 @@ export function HomeBoard({
       supabase.removeChannel(tasksChannel);
       supabase.removeChannel(jobsChannel);
     };
-  }, [currentUserId]);
+  }, [currentUserId, setTasks, setJobs]);
 
   const activeTasks = tasks.filter((t) => t.status !== "completed");
   const assignedJobs = jobs.filter((j) => j.status === "claimed" || j.status === "in_progress");

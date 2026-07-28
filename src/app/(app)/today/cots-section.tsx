@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { checkCotOut, checkCotReturned, registerCot, deleteCot } from "@/lib/actions/cots";
 import { Button, Card, EmptyState, ErrorText, inputClass } from "@/components/ui";
 import { BedIcon, CheckIcon, TrashIcon } from "@/components/icons";
+import { useSyncedState } from "@/lib/use-synced-state";
 import type { Cot } from "@/lib/types";
 
 export function CotsSection({
@@ -16,7 +17,7 @@ export function CotsSection({
   /** Director/head — can add or remove numbered cots from the roster. */
   canManage: boolean;
 }) {
-  const [cots, setCots] = useState(initialCots);
+  const [cots, setCots] = useSyncedState(initialCots);
 
   useEffect(() => {
     const supabase = createClient();
@@ -42,7 +43,7 @@ export function CotsSection({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [setCots]);
 
   const nextNumber = cots.reduce((max, c) => Math.max(max, c.number), 0) + 1;
 

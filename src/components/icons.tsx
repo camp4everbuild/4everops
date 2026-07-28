@@ -303,27 +303,28 @@ export function WhatsAppLogo({ width = 18, height = 18, ...props }: SVGProps<SVG
   );
 }
 
-/** Google Maps' pin mark, in its brand colors — not part of the stroke-icon family. */
+/** Google Maps' app-icon mark — a white rounded square with the four-color pin — not part of the stroke-icon family. */
 export function GoogleMapsLogo({ width = 18, height = 18, ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" width={width} height={height} {...props}>
-      <path
-        fill="#4285F4"
-        d="M12 2C7.6 2 4 5.6 4 10c0 5.6 6.8 11.1 7.1 11.4a1.4 1.4 0 0 0 1.8 0C13.2 21.1 20 15.6 20 10c0-4.4-3.6-8-8-8Z"
-      />
-      <circle cx="12" cy="10" r="3.2" fill="#fff" />
+      <rect x="1" y="1" width="22" height="22" rx="6" fill="#fff" />
+      <path d="M9 12.5h6L12 20Z" fill="#EA4335" />
+      <path d="M12 8 12 2.5A5.5 5.5 0 0 1 17.5 8Z" fill="#4285F4" />
+      <path d="M12 8h5.5A5.5 5.5 0 0 1 12 13.5Z" fill="#34A853" />
+      <path d="M12 8v5.5A5.5 5.5 0 0 1 6.5 8Z" fill="#FBBC05" />
+      <path d="M12 8 6.5 8A5.5 5.5 0 0 1 12 2.5Z" fill="#EA4335" />
+      <circle cx="12" cy="8" r="2.2" fill="#fff" />
     </svg>
   );
 }
 
-/** Waze's rounded mark, in its brand cyan — not part of the stroke-icon family. */
+/** Waze's app-icon mark — a white pin on its brand cyan — not part of the stroke-icon family. */
 export function WazeLogo({ width = 18, height = 18, ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" width={width} height={height} {...props}>
-      <circle cx="12" cy="12" r="10" fill="#05C8F7" />
-      <circle cx="8.75" cy="11" r="1.4" fill="#1B1B2E" />
-      <circle cx="15.25" cy="11" r="1.4" fill="#1B1B2E" />
-      <path d="M8 15.5c1 1 2.5 1.5 4 1.5s3-.5 4-1.5" stroke="#1B1B2E" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+      <rect x="1" y="1" width="22" height="22" rx="6" fill="#05C8F7" />
+      <path d="M12 5.5c-2.5 0-4.5 2-4.5 4.5 0 3.2 4.5 8.5 4.5 8.5s4.5-5.3 4.5-8.5c0-2.5-2-4.5-4.5-4.5Z" fill="#fff" />
+      <circle cx="12" cy="10" r="1.8" fill="#05C8F7" />
     </svg>
   );
 }

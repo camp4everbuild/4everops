@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { markNotificationRead, deleteNotification } from "@/lib/actions/notifications";
+import { markNotificationRead, markAllNotificationsRead, deleteNotification } from "@/lib/actions/notifications";
 import { Card, EmptyState } from "@/components/ui";
+import { useSyncedState } from "@/lib/use-synced-state";
 import {
   TasksIcon,
   CheckIcon,
@@ -42,8 +43,17 @@ export function NotificationList({
 }: {
   initialNotifications: Notification[];
 }) {
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useSyncedState(initialNotifications);
   const [, startTransition] = useTransition();
+
+  const hasUnread = notifications.some((n) => !n.is_read);
+
+  function handleMarkAllRead() {
+    setNotifications((current) => current.map((n) => ({ ...n, is_read: true })));
+    startTransition(() => {
+      markAllNotificationsRead();
+    });
+  }
 
   function handleRead(id: string) {
     setNotifications((current) =>
@@ -67,6 +77,16 @@ export function NotificationList({
 
   return (
     <div className="space-y-2">
+      {hasUnread ? (
+        <button
+          type="button"
+          className="text-sm font-medium text-accent hover:opacity-80"
+          onClick={handleMarkAllRead}
+        >
+          Mark all read
+        </button>
+      ) : null}
+
       {notifications.map((notification) => {
         const Icon = TYPE_ICON[notification.type];
         return (
