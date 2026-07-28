@@ -205,6 +205,16 @@ export function TrashIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function UploadIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M12 15V4" />
+      <path d="m7.5 8.5 4.5-4.5 4.5 4.5" />
+      <path d="M4.5 15v3a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-3" />
+    </Icon>
+  );
+}
+
 export function SwapIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { addScheduleStop, deleteScheduleStop } from "@/lib/actions/schedule";
+import { addScheduleStop, deleteScheduleStop, importScheduleStops } from "@/lib/actions/schedule";
+import { parseCsvWithHeader } from "@/lib/csv";
 import { Button, Card, EmptyState, ErrorText, Field, inputClass, textareaClass } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { PinIcon, TrashIcon } from "@/components/icons";
@@ -27,6 +28,7 @@ export function ScheduleSection({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [, startTransition] = useTransition();
 
   function handleDelete(id: string) {
@@ -41,13 +43,22 @@ export function ScheduleSection({
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-medium text-muted">Schedule</h2>
         {canManage ? (
-          <button
-            type="button"
-            className="text-sm font-medium text-accent hover:opacity-80"
-            onClick={() => setOpen(true)}
-          >
-            + Add stop
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="text-sm font-medium text-accent hover:opacity-80"
+              onClick={() => setImportOpen(true)}
+            >
+              Import CSV
+            </button>
+            <button
+              type="button"
+              className="text-sm font-medium text-accent hover:opacity-80"
+              onClick={() => setOpen(true)}
+            >
+              + Add stop
+            </button>
+          </div>
         ) : null}
       </div>
 
@@ -119,7 +130,90 @@ export function ScheduleSection({
           )}
         </Modal>
       ) : null}
+
+      {importOpen ? (
+        <Modal title="Import today's schedule" onClose={() => setImportOpen(false)}>
+          {(requestClose) => (
+            <ImportStopsForm
+              travelDate={travelDate}
+              onDone={() => {
+                requestClose();
+                router.refresh();
+              }}
+            />
+          )}
+        </Modal>
+      ) : null}
     </section>
+  );
+}
+
+function ImportStopsForm({
+  travelDate,
+  onDone,
+}: {
+  travelDate: string;
+  onDone: () => void;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    const file = fileInputRef.current?.files?.[0];
+    if (!file) {
+      setError("Choose a CSV file first.");
+      return;
+    }
+
+    startTransition(async () => {
+      const text = await file.text();
+      const records = parseCsvWithHeader(text);
+      const rows = records.map((record) => ({
+        label: record.label || record.stop || "",
+        address: record.address || "",
+        time: record.time || null,
+        notes: record.notes || null,
+      }));
+
+      const result = await importScheduleStops(travelDate, rows);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      onDone();
+    });
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <p className="text-sm text-muted">
+        This replaces today&apos;s whole schedule with what&apos;s in the file.
+      </p>
+
+      <Field label="CSV file" hint='Columns: "label" (or "stop"), "address", optional "time", "notes"'>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,text/csv"
+          className="block w-full text-sm text-muted file:mr-3 file:min-h-9 file:cursor-pointer file:rounded-lg file:border file:border-border file:bg-background file:px-3 file:text-sm file:font-medium file:text-foreground"
+        />
+      </Field>
+
+      <ErrorText>{error}</ErrorText>
+
+      <div className="flex gap-2">
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Importing…" : "Replace schedule"}
+        </Button>
+        <Button type="button" variant="secondary" onClick={onDone}>
+          Cancel
+        </Button>
+      </div>
+    </form>
   );
 }
 

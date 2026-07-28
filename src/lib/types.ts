@@ -132,6 +132,16 @@ export type ScheduleStop = {
   created_at: string;
 };
 
+/** A CSV row waiting for a director/head to post it as an open job or assign it to someone — nothing here is staff-facing yet. */
+export type PendingImport = {
+  id: string;
+  title: string;
+  description: string | null;
+  batch_label: string;
+  created_by: string;
+  created_at: string;
+};
+
 export type CotLoan = {
   id: string;
   room_or_group: string;

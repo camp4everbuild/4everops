@@ -37,6 +37,51 @@ export async function addScheduleStop(input: {
   return { error: null };
 }
 
+/** Replaces a day's stops in one shot from a parsed CSV — simpler than merging row-by-row against whatever's already there. */
+export async function importScheduleStops(
+  travelDate: string,
+  rows: { label: string; address: string; time: string | null; notes: string | null }[],
+): Promise<ActionResult> {
+  const profile = await requireProfile();
+  if (!isOversight(profile)) return { error: "Only a director or head can edit the schedule." };
+
+  const cleanRows = rows
+    .map((r) => ({
+      label: r.label.trim(),
+      address: r.address.trim(),
+      time: r.time?.trim() || null,
+      notes: r.notes?.trim() || null,
+    }))
+    .filter((r) => r.label.length > 0 && r.address.length > 0);
+  if (cleanRows.length === 0) {
+    return { error: "No rows with both a label and an address found in that file." };
+  }
+
+  const supabase = await createClient();
+
+  const { error: deleteError } = await supabase
+    .from("schedule_stops")
+    .delete()
+    .eq("travel_date", travelDate);
+  if (deleteError) return { error: deleteError.message };
+
+  const { error: insertError } = await supabase.from("schedule_stops").insert(
+    cleanRows.map((r, i) => ({
+      travel_date: travelDate,
+      label: r.label,
+      address: r.address,
+      time: r.time,
+      notes: r.notes,
+      sort_order: i,
+      created_by: profile.id,
+    })),
+  );
+  if (insertError) return { error: insertError.message };
+
+  revalidatePath("/today");
+  return { error: null };
+}
+
 export async function deleteScheduleStop(id: string): Promise<ActionResult> {
   const profile = await requireProfile();
   if (!isOversight(profile)) return { error: "Only a director or head can edit the schedule." };
