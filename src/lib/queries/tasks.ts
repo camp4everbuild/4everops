@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { TaskWithPeople } from "@/lib/types";
 
 const SELECT_WITH_PEOPLE =
-  "*, assignee:assigned_to(id, full_name), assigner:assigned_by(id, full_name)";
+  "*, assignee:assigned_to(id, full_name, phone), assigner:assigned_by(id, full_name, phone)";
 
 /** Tasks assigned to you, plus ones you created for someone else — your whole stake in the board. */
 export async function getMyTasks(userId: string): Promise<TaskWithPeople[]> {

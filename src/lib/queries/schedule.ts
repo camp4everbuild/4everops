@@ -3,7 +3,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { ScheduleStopWithAssignee } from "@/lib/types";
 
-const SELECT_WITH_ASSIGNEE = "*, assignee:assigned_to(id, full_name)";
+const SELECT_WITH_ASSIGNEE = "*, assignee:assigned_to(id, full_name, phone)";
 
 export async function getScheduleStops(travelDate: string): Promise<ScheduleStopWithAssignee[]> {
   const supabase = await createClient();

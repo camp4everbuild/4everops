@@ -5,8 +5,17 @@ import { formatDistanceToNow } from "date-fns";
 import { claimJob, startJob, completeJob, deleteJob, assignJob } from "@/lib/actions/jobs";
 import { mapsUrl, wazeUrl } from "@/lib/maps";
 import { Button, Card, Select } from "@/components/ui";
-import { PersonIcon, SwapIcon, TrashIcon } from "@/components/icons";
+import { ContactIcons } from "@/components/contact-icons";
+import { GoogleMapsLogo, PersonIcon, SwapIcon, TrashIcon, WazeLogo } from "@/components/icons";
 import type { JobStatus, OpenJobWithPeople, Profile } from "@/lib/types";
+
+// Each button is tinted toward the status it moves the job *into* — same
+// language as the tile colors, so the button previews what tapping it does.
+const ACTION_BUTTON_CLASS: Record<"claimed" | "in_progress" | "completed", string> = {
+  claimed: "",
+  in_progress: "bg-amber-500! shadow-amber-500/30!",
+  completed: "bg-emerald-500! shadow-emerald-500/30!",
+};
 
 // See task-row.tsx's STATUS_TILE_CLASS comment — trailing `!` needed because
 // Card's own base border/bg classes otherwise win unpredictably depending on
@@ -74,6 +83,7 @@ export function JobRow({
               <span className="inline-flex items-center gap-1">
                 <PersonIcon className="h-3.5 w-3.5" />
                 {job.claimer.full_name}
+                <ContactIcons phone={job.claimer.phone} />
               </span>
             ) : null}
             {job.status === "completed" && job.completed_at ? (
@@ -125,15 +135,27 @@ export function JobRow({
           </Button>
         </div>
       ) : job.status === "open" ? (
-        <Button className="mt-3 w-full" disabled={isPending} onClick={() => run(() => claimJob(job.id))}>
+        <Button
+          className={`mt-3 w-full ${ACTION_BUTTON_CLASS.claimed}`}
+          disabled={isPending}
+          onClick={() => run(() => claimJob(job.id))}
+        >
           {isPending ? "Claiming…" : "On it"}
         </Button>
       ) : job.status === "claimed" && isMine ? (
-        <Button className="mt-3 w-full" disabled={isPending} onClick={() => run(() => startJob(job.id))}>
+        <Button
+          className={`mt-3 w-full ${ACTION_BUTTON_CLASS.in_progress}`}
+          disabled={isPending}
+          onClick={() => run(() => startJob(job.id))}
+        >
           {isPending ? "Starting…" : "In progress"}
         </Button>
       ) : job.status === "in_progress" && isMine ? (
-        <Button className="mt-3 w-full" disabled={isPending} onClick={() => run(() => completeJob(job.id))}>
+        <Button
+          className={`mt-3 w-full ${ACTION_BUTTON_CLASS.completed}`}
+          disabled={isPending}
+          onClick={() => run(() => completeJob(job.id))}
+        >
           {isPending ? "Finishing…" : "Done"}
         </Button>
       ) : null}
@@ -143,16 +165,18 @@ export function JobRow({
           href={mapsUrl(job.title)}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-9 flex-1 items-center justify-center rounded-lg border border-border bg-surface px-3 text-xs font-medium transition hover:bg-border/40"
+          className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-xs font-medium transition hover:bg-border/40"
         >
-          Google Maps
+          <GoogleMapsLogo width={14} height={14} />
+          Maps
         </a>
         <a
           href={wazeUrl(job.title)}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-9 flex-1 items-center justify-center rounded-lg border border-border bg-surface px-3 text-xs font-medium transition hover:bg-border/40"
+          className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-xs font-medium transition hover:bg-border/40"
         >
+          <WazeLogo width={14} height={14} />
           Waze
         </a>
       </div>

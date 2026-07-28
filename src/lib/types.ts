@@ -134,7 +134,7 @@ export type ScheduleStop = {
 };
 
 export type ScheduleStopWithAssignee = ScheduleStop & {
-  assignee: Pick<Profile, "id" | "full_name"> | null;
+  assignee: Pick<Profile, "id" | "full_name" | "phone"> | null;
 };
 
 /** A CSV row waiting for a director/head to post it as an open job or assign it to someone — nothing here is staff-facing yet. */
@@ -238,13 +238,13 @@ export type PushSubscriptionRow = {
 
 /** Rows joined with the assignee/creator profile, as returned by our queries. */
 export type TaskWithPeople = Task & {
-  assignee: Pick<Profile, "id" | "full_name"> | null;
-  assigner: Pick<Profile, "id" | "full_name"> | null;
+  assignee: Pick<Profile, "id" | "full_name" | "phone"> | null;
+  assigner: Pick<Profile, "id" | "full_name" | "phone"> | null;
 };
 
 export type OpenJobWithPeople = OpenJob & {
-  creator: Pick<Profile, "id" | "full_name"> | null;
-  claimer: Pick<Profile, "id" | "full_name"> | null;
+  creator: Pick<Profile, "id" | "full_name" | "phone"> | null;
+  claimer: Pick<Profile, "id" | "full_name" | "phone"> | null;
 };
 
 export type ChecklistItemWithAssignee = ChecklistItem & {

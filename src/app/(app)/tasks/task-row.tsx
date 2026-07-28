@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import { updateTaskStatus, updateTaskNotes, deleteTask, reassignTask } from "@/lib/actions/tasks";
 import { Card, PriorityBadge, Select, textareaClass } from "@/components/ui";
+import { ContactIcons } from "@/components/contact-icons";
 import { CalendarIcon, PersonIcon, PencilIcon, SwapIcon, TrashIcon } from "@/components/icons";
 import type { Profile, TaskStatus, TaskWithPeople } from "@/lib/types";
 
@@ -104,7 +105,7 @@ export function TaskRow({
     ? `Due ${format(new Date(task.due_at), "MMM d, h:mm a")}`
     : `Logged ${formatDistanceToNow(new Date(task.created_at), { addSuffix: true })}`;
 
-  const peopleLabel = personLabel(task, currentUserId);
+  const person = personInfo(task, currentUserId);
 
   return (
     <Card className={STATUS_TILE_CLASS[status]}>
@@ -119,10 +120,11 @@ export function TaskRow({
               <CalendarIcon className="h-3.5 w-3.5" />
               {timestampLabel}
             </span>
-            {peopleLabel ? (
+            {person ? (
               <span className="inline-flex items-center gap-1">
                 <PersonIcon className="h-3.5 w-3.5" />
-                {peopleLabel}
+                {person.label}
+                <ContactIcons phone={person.contact?.phone} />
               </span>
             ) : null}
           </div>
@@ -242,23 +244,30 @@ export function TaskRow({
 
 /**
  * Who shows up next to the timestamp depends on whose screen this is:
- * - assigned to you (someone else made it) → who it's from
- * - you made it for someone else → who it's going to
- * - neither (director oversight of someone else's delegation) → both
+ * - assigned to you (someone else made it) → who it's from (contact icons for them)
+ * - you made it for someone else → who it's going to (contact icons for them)
+ * - neither (director oversight of someone else's delegation) → both, no single
+ *   person to attach contact icons to
  * - you made it for yourself → nothing extra to say
  */
-function personLabel(task: TaskWithPeople, currentUserId: string): string | null {
+function personInfo(
+  task: TaskWithPeople,
+  currentUserId: string,
+): { label: string; contact: Pick<Profile, "phone"> | null } | null {
   const isMine = task.assigned_to === currentUserId;
   const isMadeByMe = task.assigned_by === currentUserId;
 
   if (isMine && !isMadeByMe) {
-    return task.assigner ? `From ${task.assigner.full_name}` : null;
+    return task.assigner ? { label: `From ${task.assigner.full_name}`, contact: task.assigner } : null;
   }
   if (isMadeByMe && !isMine) {
-    return task.assignee ? `To ${task.assignee.full_name}` : null;
+    return task.assignee ? { label: `To ${task.assignee.full_name}`, contact: task.assignee } : null;
   }
   if (!isMine && !isMadeByMe) {
-    return `${task.assigner?.full_name ?? "?"} → ${task.assignee?.full_name ?? "?"}`;
+    return {
+      label: `${task.assigner?.full_name ?? "?"} → ${task.assignee?.full_name ?? "?"}`,
+      contact: null,
+    };
   }
   return null;
 }

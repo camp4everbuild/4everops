@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { ROLE_LABELS } from "@/lib/types";
 import { BottomNav } from "@/components/bottom-nav";
+import { HeaderThemeToggle } from "@/components/header-theme-toggle";
 import { NotificationBell } from "@/components/notification-bell";
 import { PushPrompt } from "@/components/push-prompt";
 import { createClient } from "@/lib/supabase/server";
@@ -30,6 +31,7 @@ export default async function AppLayout({
             4everOPS
           </Link>
           <div className="flex items-center gap-3">
+            <HeaderThemeToggle />
             <NotificationBell
               userId={profile.id}
               initialUnread={count ?? 0}

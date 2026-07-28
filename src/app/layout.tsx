@@ -31,6 +31,13 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  // Without this, a fixed-position element (the bottom-sheet Modal, the
+  // BottomNav) is positioned against the full layout viewport, which the
+  // on-screen keyboard doesn't shrink — so the keyboard just covers
+  // whatever happens to be near the bottom instead of the page making
+  // room for it. This tells the browser to actually resize the layout
+  // viewport when the keyboard opens, same as a native app.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

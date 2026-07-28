@@ -194,6 +194,22 @@ export function PersonIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function PhoneIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M5.5 4h3l1.5 4-2 1.5a11 11 0 0 0 5.5 5.5l1.5-2 4 1.5v3a1.5 1.5 0 0 1-1.6 1.5A16 16 0 0 1 4 6.6 1.5 1.5 0 0 1 5.5 4Z" />
+    </Icon>
+  );
+}
+
+export function MessageIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M4 5.5h16v10.5a1 1 0 0 1-1 1H8l-4 3.5V6.5a1 1 0 0 1 1-1Z" />
+    </Icon>
+  );
+}
+
 export function TrashIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>
@@ -266,6 +282,48 @@ export function GoogleLogo({ width = 18, height = 18, ...props }: SVGProps<SVGSV
         fill="#1976D2"
         d="M43.6 20.5H42V20H24v8h11.3a12 12 0 0 1-4.1 5.6l6.6 5.6C41.5 36 44 30.6 44 24c0-1.2-.1-2.4-.4-3.5Z"
       />
+    </svg>
+  );
+}
+
+/** WhatsApp's rounded mark, in its brand green — not part of the stroke-icon family. */
+export function WhatsAppLogo({ width = 18, height = 18, ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width={width} height={height} {...props}>
+      <circle cx="12" cy="12" r="10" fill="#25D366" />
+      <path
+        fill="#fff"
+        d="M12 5.5a6.4 6.4 0 0 0-5.5 9.7L5.5 18.5l3.4-.9A6.4 6.4 0 1 0 12 5.5Zm0 1.3a5.1 5.1 0 1 1 0 10.2 5 5 0 0 1-2.6-.7l-.3-.2-2 .5.5-1.9-.2-.3A5.1 5.1 0 0 1 12 6.8Z"
+      />
+      <path
+        fill="#fff"
+        d="M10 9.3c-.1-.3-.3-.3-.5-.3h-.4c-.1 0-.4 0-.6.3-.2.2-.8.7-.8 1.8s.8 2.1.9 2.2c.1.2 1.5 2.3 3.7 3.1 1.8.7 2.2.6 2.6.5.4 0 1.2-.5 1.4-1 .2-.4.2-.8.1-.9-.1-.1-.2-.2-.5-.3l-1.4-.7c-.2-.1-.4-.1-.5.1l-.6.7c-.1.1-.2.2-.4.1-.2-.1-.9-.3-1.6-1-.6-.6-1-1.3-1.1-1.5-.1-.2 0-.3.1-.4l.4-.5c.1-.1.1-.2.2-.4 0-.1 0-.3 0-.4L10 9.3Z"
+      />
+    </svg>
+  );
+}
+
+/** Google Maps' pin mark, in its brand colors — not part of the stroke-icon family. */
+export function GoogleMapsLogo({ width = 18, height = 18, ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width={width} height={height} {...props}>
+      <path
+        fill="#4285F4"
+        d="M12 2C7.6 2 4 5.6 4 10c0 5.6 6.8 11.1 7.1 11.4a1.4 1.4 0 0 0 1.8 0C13.2 21.1 20 15.6 20 10c0-4.4-3.6-8-8-8Z"
+      />
+      <circle cx="12" cy="10" r="3.2" fill="#fff" />
+    </svg>
+  );
+}
+
+/** Waze's rounded mark, in its brand cyan — not part of the stroke-icon family. */
+export function WazeLogo({ width = 18, height = 18, ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width={width} height={height} {...props}>
+      <circle cx="12" cy="12" r="10" fill="#05C8F7" />
+      <circle cx="8.75" cy="11" r="1.4" fill="#1B1B2E" />
+      <circle cx="15.25" cy="11" r="1.4" fill="#1B1B2E" />
+      <path d="M8 15.5c1 1 2.5 1.5 4 1.5s3-.5 4-1.5" stroke="#1B1B2E" strokeWidth="1.4" fill="none" strokeLinecap="round" />
     </svg>
   );
 }

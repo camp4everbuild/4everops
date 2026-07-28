@@ -11,8 +11,8 @@ import { JobRow } from "./jobs/job-row";
 import type { OpenJobWithPeople, Profile, TaskWithPeople } from "@/lib/types";
 
 const TASK_SELECT_WITH_PEOPLE =
-  "*, assignee:assigned_to(id, full_name), assigner:assigned_by(id, full_name)";
-const JOB_SELECT_WITH_PEOPLE = "*, creator:created_by(id, full_name), claimer:claimed_by(id, full_name)";
+  "*, assignee:assigned_to(id, full_name, phone), assigner:assigned_by(id, full_name, phone)";
+const JOB_SELECT_WITH_PEOPLE = "*, creator:created_by(id, full_name, phone), claimer:claimed_by(id, full_name, phone)";
 
 type Tab = "assigned" | "open" | "history";
 
