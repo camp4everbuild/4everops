@@ -4,18 +4,11 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addScheduleStop, deleteScheduleStop, importScheduleStops } from "@/lib/actions/schedule";
 import { parseCsvWithHeader } from "@/lib/csv";
+import { mapsUrl, wazeUrl } from "@/lib/maps";
 import { Button, Card, EmptyState, ErrorText, Field, inputClass, textareaClass } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { PinIcon, TrashIcon } from "@/components/icons";
 import type { ScheduleStop } from "@/lib/types";
-
-function mapsUrl(address: string) {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-}
-
-function wazeUrl(address: string) {
-  return `https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`;
-}
 
 export function ScheduleSection({
   travelDate,

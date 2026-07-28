@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { claimJob, startJob, completeJob, deleteJob, assignJob } from "@/lib/actions/jobs";
+import { mapsUrl, wazeUrl } from "@/lib/maps";
 import { Button, Card, Select } from "@/components/ui";
 import { PersonIcon, SwapIcon, TrashIcon } from "@/components/icons";
 import type { JobStatus, OpenJobWithPeople, Profile } from "@/lib/types";
@@ -136,6 +137,25 @@ export function JobRow({
           {isPending ? "Finishing…" : "Done"}
         </Button>
       ) : null}
+
+      <div className="mt-2 flex gap-2">
+        <a
+          href={mapsUrl(job.title)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-9 flex-1 items-center justify-center rounded-lg border border-border bg-surface px-3 text-xs font-medium transition hover:bg-border/40"
+        >
+          Google Maps
+        </a>
+        <a
+          href={wazeUrl(job.title)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-9 flex-1 items-center justify-center rounded-lg border border-border bg-surface px-3 text-xs font-medium transition hover:bg-border/40"
+        >
+          Waze
+        </a>
+      </div>
     </Card>
   );
 }
