@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --background: #f7f7fb;
+  --surface: #ffffff;
+  --border: #e5e4f0;
+  --foreground: #17162a;
+  --muted: #666478;
+  --accent: #4f46e5;
+  --accent-fg: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0b0b14;
+    --surface: #16151f;
+    --border: #28273a;
+    --foreground: #ececf5;
+    --muted: #92909f;
+    --accent: #818cf8;
+    --accent-fg: #1e1b4b;
   }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Staff use this one-handed, outdoors, in a hurry. Keep tap targets honest. */
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/*
+ * Page-shell conventions — every page picks one of these two widths, no
+ * one-off max-w-* values:
+ *   .shell-narrow  — solo screens: login, onboarding, pending. max-w-sm.
+ *   .shell-content — everything inside (app), under the shared header/nav. max-w-3xl.
+ * `env(safe-area-inset-*)` keeps content clear of the iPhone notch and home
+ * indicator; viewport-fit=cover (set in layout.tsx) is what makes those vars
+ * non-zero in the first place.
+ */
+.shell-narrow {
+  width: 100%;
+  max-width: 24rem;
+  margin-inline: auto;
+  padding-inline: max(1.5rem, env(safe-area-inset-left));
+}
+
+.shell-content {
+  width: 100%;
+  max-width: 48rem;
+  margin-inline: auto;
+  padding-inline: max(1rem, env(safe-area-inset-left));
+}
+
+/* A quiet glow behind solo pages (login/onboarding/pending) — the app's
+   "front door" gets a bit more visual polish than the working screens,
+   which stay flat and neutral for fast scanning during a task. */
+.auth-backdrop {
+  background:
+    radial-gradient(60rem 30rem at 50% -10%, color-mix(in oklch, var(--accent) 16%, transparent), transparent),
+    var(--background);
 }
