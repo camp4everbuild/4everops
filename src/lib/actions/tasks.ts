@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { isOversight, requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 import type { TaskPriority } from "@/lib/types";
 import { mutationResult, type ActionResult } from "./types";
 
@@ -86,11 +87,21 @@ export async function reassignTask(id: string, assigneeId: string): Promise<Acti
 }
 
 export async function deleteTask(id: string): Promise<ActionResult> {
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
-  const { data, error } = await supabase.from("tasks").delete().eq("id", id).select("id");
+  const { data, error } = await supabase.from("tasks").delete().eq("id", id).select("id, title");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "delete_task",
+      targetTable: "tasks",
+      targetId: id,
+      detail: data?.[0]?.title,
+    });
+    revalidatePath("/");
+  }
   return result;
 }

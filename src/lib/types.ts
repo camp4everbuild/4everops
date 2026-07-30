@@ -236,6 +236,21 @@ export type PushSubscriptionRow = {
   created_at: string;
 };
 
+export type AuditLogEntry = {
+  id: string;
+  actor_id: string | null;
+  actor_name: string;
+  action: string;
+  target_table: string | null;
+  target_id: string | null;
+  detail: string | null;
+  created_at: string;
+};
+
+export type NotificationWithRecipient = Notification & {
+  recipient: Pick<Profile, "id" | "full_name"> | null;
+};
+
 /** Rows joined with the assignee/creator profile, as returned by our queries. */
 export type TaskWithPeople = Task & {
   assignee: Pick<Profile, "id" | "full_name" | "phone"> | null;

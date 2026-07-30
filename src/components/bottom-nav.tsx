@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 import { OVERSIGHT_ROLES, type UserRole } from "@/lib/types";
-import { HomeIcon, CalendarIcon, TeamIcon, UploadIcon } from "@/components/icons";
+import { HomeIcon, CalendarIcon, TeamIcon, UploadIcon, ShieldIcon } from "@/components/icons";
 
 const ITEMS: {
   href: string;
@@ -16,6 +16,7 @@ const ITEMS: {
   { href: "/today", label: "Today", icon: CalendarIcon },
   { href: "/imports", label: "Import", icon: UploadIcon, roles: OVERSIGHT_ROLES },
   { href: "/team", label: "Team", icon: TeamIcon, roles: OVERSIGHT_ROLES },
+  { href: "/admin", label: "Admin", icon: ShieldIcon, roles: ["director"] },
 ];
 
 export function BottomNav({ roles }: { roles: UserRole[] }) {

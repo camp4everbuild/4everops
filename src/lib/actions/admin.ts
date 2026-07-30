@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 import type { UserRole } from "@/lib/types";
 import { mutationResult, type ActionResult } from "./types";
 
@@ -21,7 +22,7 @@ export async function inviteUser(input: {
   fullName: string;
   roles: UserRole[];
 }): Promise<ActionResult> {
-  await requireRole("director");
+  const profile = await requireRole("director");
 
   const email = input.email.trim();
   const fullName = input.fullName.trim();
@@ -44,12 +45,21 @@ export async function inviteUser(input: {
 
   if (profileError) return { error: profileError.message };
 
+  await logAudit({
+    actorId: profile.id,
+    actorName: profile.full_name,
+    action: "invite_user",
+    targetTable: "profiles",
+    targetId: data.user.id,
+    detail: `Invited ${fullName} (${email}) as ${input.roles.join(", ")}`,
+  });
+
   revalidatePath("/team");
   return { error: null };
 }
 
 export async function updateUserRoles(userId: string, roles: UserRole[]): Promise<ActionResult> {
-  await requireRole("director");
+  const profile = await requireRole("director");
   if (roles.length === 0) return { error: "Pick at least one role." };
 
   const admin = createAdminClient();
@@ -57,10 +67,20 @@ export async function updateUserRoles(userId: string, roles: UserRole[]): Promis
     .from("profiles")
     .update({ roles })
     .eq("id", userId)
-    .select("id");
+    .select("id, full_name");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/team");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "update_user_roles",
+      targetTable: "profiles",
+      targetId: userId,
+      detail: `Set roles for ${data?.[0]?.full_name ?? userId} to ${roles.join(", ")}`,
+    });
+    revalidatePath("/team");
+  }
   return result;
 }
 
@@ -71,7 +91,7 @@ export async function updateUserRoles(userId: string, roles: UserRole[]): Promis
  * both the RLS policy and the enforce_profile_role_change trigger.
  */
 export async function approveUser(userId: string, roles: UserRole[]): Promise<ActionResult> {
-  await requireRole("director");
+  const profile = await requireRole("director");
   if (roles.length === 0) return { error: "Pick at least one role." };
 
   const supabase = await createClient();
@@ -79,9 +99,19 @@ export async function approveUser(userId: string, roles: UserRole[]): Promise<Ac
     .from("profiles")
     .update({ roles, status: "active" })
     .eq("id", userId)
-    .select("id");
+    .select("id, full_name");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/team");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "approve_user",
+      targetTable: "profiles",
+      targetId: userId,
+      detail: `Approved ${data?.[0]?.full_name ?? userId} with roles ${roles.join(", ")}`,
+    });
+    revalidatePath("/team");
+  }
   return result;
 }

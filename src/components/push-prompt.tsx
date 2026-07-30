@@ -57,13 +57,10 @@ export function PushPrompt() {
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
-      <div
-        className="relative w-full max-w-sm rounded-t-3xl border border-border bg-surface p-6 shadow-xl sm:rounded-3xl"
-        style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
-      >
+      <div className="relative w-full max-w-sm rounded-3xl border border-border bg-surface p-6 shadow-xl">
         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent">
           <BellIcon className="h-5 w-5" />
         </span>

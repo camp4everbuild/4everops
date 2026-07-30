@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { isOversight, requireProfile, requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 import type { Department } from "@/lib/types";
 import { mutationResult, type ActionResult } from "./types";
 
@@ -101,16 +102,26 @@ export async function assignChecklistItem(id: string, userId: string | null): Pr
 }
 
 export async function deleteChecklistItem(id: string): Promise<ActionResult> {
-  await requireRole("director");
+  const profile = await requireRole("director");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("checklist_items")
     .delete()
     .eq("id", id)
-    .select("id");
+    .select("id, title");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/today");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "delete_checklist_item",
+      targetTable: "checklist_items",
+      targetId: id,
+      detail: data?.[0]?.title,
+    });
+    revalidatePath("/today");
+  }
   return result;
 }
 

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { isOversight, requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 import { mutationResult, type ActionResult } from "./types";
 
 export async function addScheduleStop(input: {
@@ -105,9 +106,19 @@ export async function deleteScheduleStop(id: string): Promise<ActionResult> {
   if (!isOversight(profile)) return { error: "Only a director or head can edit the schedule." };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("schedule_stops").delete().eq("id", id).select("id");
+  const { data, error } = await supabase.from("schedule_stops").delete().eq("id", id).select("id, label");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/today");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "delete_schedule_stop",
+      targetTable: "schedule_stops",
+      targetId: id,
+      detail: data?.[0]?.label,
+    });
+    revalidatePath("/today");
+  }
   return result;
 }

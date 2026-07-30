@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { canPostJobs, isOversight, requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 import { mutationResult, type ActionResult } from "./types";
 
 export async function createJob(input: {
@@ -89,11 +90,21 @@ export async function assignJob(id: string, assigneeId: string): Promise<ActionR
 }
 
 export async function deleteJob(id: string): Promise<ActionResult> {
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
-  const { data, error } = await supabase.from("open_jobs").delete().eq("id", id).select("id");
+  const { data, error } = await supabase.from("open_jobs").delete().eq("id", id).select("id, title");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "delete_job",
+      targetTable: "open_jobs",
+      targetId: id,
+      detail: data?.[0]?.title,
+    });
+    revalidatePath("/");
+  }
   return result;
 }

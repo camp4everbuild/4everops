@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { isOversight, requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 import { mutationResult, type ActionResult } from "./types";
 
 /** Adds a new numbered cot to the physical roster — a one-time setup action, not a daily one. */
@@ -18,6 +19,14 @@ export async function registerCot(number: number): Promise<ActionResult> {
     if (error.message.includes("duplicate key")) return { error: `Cot #${number} already exists.` };
     return { error: error.message };
   }
+
+  await logAudit({
+    actorId: profile.id,
+    actorName: profile.full_name,
+    action: "register_cot",
+    targetTable: "cots",
+    detail: `Cot #${number}`,
+  });
 
   revalidatePath("/today");
   return { error: null };
@@ -68,9 +77,19 @@ export async function deleteCot(id: string): Promise<ActionResult> {
   if (!isOversight(profile)) return { error: "Only a director or head can remove a cot." };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("cots").delete().eq("id", id).select("id");
+  const { data, error } = await supabase.from("cots").delete().eq("id", id).select("id, number");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/today");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "delete_cot",
+      targetTable: "cots",
+      targetId: id,
+      detail: data?.[0] ? `Cot #${data[0].number}` : undefined,
+    });
+    revalidatePath("/today");
+  }
   return result;
 }

@@ -231,6 +231,26 @@ export function UploadIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function RefreshIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M4 12a8 8 0 0 1 14-5.3L20 8" />
+      <path d="M20 4v4h-4" />
+      <path d="M20 12a8 8 0 0 1-14 5.3L4 16" />
+      <path d="M4 20v-4h4" />
+    </Icon>
+  );
+}
+
+export function ShieldIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3.5 5 6v6c0 4.5 3 7.5 7 8.5 4-1 7-4 7-8.5V6Z" />
+      <path d="m9 12 2 2 4-4.5" />
+    </Icon>
+  );
+}
+
 export function SwapIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

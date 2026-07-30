@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
-import type { Notification } from "@/lib/types";
+import type { Notification, NotificationWithRecipient } from "@/lib/types";
 
 export async function getNotifications(userId: string): Promise<Notification[]> {
   const supabase = await createClient();
@@ -14,6 +14,19 @@ export async function getNotifications(userId: string): Promise<Notification[]> 
 
   if (error) throw error;
   return (data ?? []) as Notification[];
+}
+
+/** Director-only view (relies on the notifications_select_director RLS policy) — everyone's recent notifications, for the admin resend tool. */
+export async function getRecentNotificationsForAdmin(): Promise<NotificationWithRecipient[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("*, recipient:user_id(id, full_name)")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) throw error;
+  return (data ?? []) as unknown as NotificationWithRecipient[];
 }
 
 export async function getUnreadCount(userId: string): Promise<number> {
