@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireProfile, requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { mutationResult, type ActionResult } from "./types";
 
@@ -49,12 +50,18 @@ export async function deleteNotification(id: string): Promise<ActionResult> {
   return result;
 }
 
-/** Director resends a notification (and its push) — a fresh row so the existing INSERT-based push trigger fires again. */
+/**
+ * Director/admin resends a notification (and its push) — a fresh row so
+ * the existing INSERT-based push trigger fires again. Uses the admin
+ * client deliberately: notifications has no client-facing insert policy
+ * at all (only the security-definer triggers can enqueue one), so this
+ * write would otherwise be silently rejected by RLS.
+ */
 export async function retriggerNotification(id: string): Promise<ActionResult> {
-  const profile = await requireRole("director");
+  const profile = await requireRole("director", "admin");
 
-  const supabase = await createClient();
-  const { data: original, error: fetchError } = await supabase
+  const admin = createAdminClient();
+  const { data: original, error: fetchError } = await admin
     .from("notifications")
     .select("user_id, type, title, body, related_table, related_id")
     .eq("id", id)
@@ -63,7 +70,7 @@ export async function retriggerNotification(id: string): Promise<ActionResult> {
   if (fetchError) return { error: fetchError.message };
   if (!original) return { error: "Notification not found." };
 
-  const { error } = await supabase.from("notifications").insert(original);
+  const { error } = await admin.from("notifications").insert(original);
   if (error) return { error: error.message };
 
   await logAudit({

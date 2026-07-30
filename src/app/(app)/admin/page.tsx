@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui";
 import { AdminBoard } from "./admin-board";
 
 export default async function AdminPage() {
-  await requireRole("director");
+  await requireRole("director", "admin");
 
   const [notifications, auditLog] = await Promise.all([
     getRecentNotificationsForAdmin(),

@@ -1,5 +1,6 @@
 export type UserRole =
   | "director"
+  | "admin"
   | "head_counselor"
   | "head_support"
   | "head_kitchen"
@@ -19,6 +20,7 @@ export type JobStatus = "open" | "claimed" | "in_progress" | "completed";
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   director: "Director",
+  admin: "Admin",
   head_counselor: "Head Counselor",
   head_support: "Head Support",
   head_kitchen: "Head Kitchen",
@@ -39,6 +41,7 @@ export const ROLE_DEPARTMENT: Partial<Record<UserRole, Department>> = {
 
 export const OVERSIGHT_ROLES: UserRole[] = [
   "director",
+  "admin",
   "head_counselor",
   "head_support",
   "head_kitchen",

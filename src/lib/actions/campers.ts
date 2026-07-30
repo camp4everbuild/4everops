@@ -15,7 +15,7 @@ export type CamperInput = {
 };
 
 export async function createCamper(input: CamperInput): Promise<ActionResult> {
-  await requireRole("director");
+  await requireRole("director", "admin");
 
   const fullName = input.fullName.trim();
   if (!fullName) return { error: "Name is required." };
@@ -37,7 +37,7 @@ export async function createCamper(input: CamperInput): Promise<ActionResult> {
 }
 
 export async function updateCamper(id: string, input: CamperInput): Promise<ActionResult> {
-  await requireRole("director");
+  await requireRole("director", "admin");
 
   const fullName = input.fullName.trim();
   if (!fullName) return { error: "Name is required." };
@@ -62,7 +62,7 @@ export async function updateCamper(id: string, input: CamperInput): Promise<Acti
 }
 
 export async function deleteCamper(id: string): Promise<ActionResult> {
-  await requireRole("director");
+  await requireRole("director", "admin");
   const supabase = await createClient();
   const { data, error } = await supabase.from("campers").delete().eq("id", id).select("id");
 

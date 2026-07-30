@@ -10,7 +10,7 @@ export async function createAnnouncement(input: {
   body: string;
   requiresAck: boolean;
 }): Promise<ActionResult> {
-  const profile = await requireRole("director");
+  const profile = await requireRole("director", "admin");
 
   const title = input.title.trim();
   const body = input.body.trim();
@@ -45,7 +45,7 @@ export async function acknowledgeAnnouncement(announcementId: string): Promise<A
 }
 
 export async function deleteAnnouncement(id: string): Promise<ActionResult> {
-  await requireRole("director");
+  await requireRole("director", "admin");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("announcements")

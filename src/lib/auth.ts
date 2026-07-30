@@ -48,18 +48,32 @@ export function hasAnyRole(profile: Profile, ...roles: UserRole[]): boolean {
   return profile.roles.some((r) => roles.includes(r));
 }
 
+/**
+ * "Director-level" access — deliberately true for 'admin' too. Admin is a
+ * separate role (full system control: the /admin board, retriggering
+ * notifications) rather than camp-operations authority, but the two share
+ * the same permission ceiling everywhere else, so every existing
+ * director-only gate treats them as equivalent without needing its own copy.
+ * Use isAdmin() instead when you specifically mean the admin role itself
+ * (e.g. deciding who can grant/revoke it).
+ */
 export function isDirector(profile: Profile): boolean {
-  return profile.roles.includes("director");
+  return hasAnyRole(profile, "director", "admin");
 }
 
-/** Director or any Head — sees every department, not just their own. */
+/** Specifically the admin role — narrower than isDirector(). */
+export function isAdmin(profile: Profile): boolean {
+  return profile.roles.includes("admin");
+}
+
+/** Director/admin or any Head — sees every department, not just their own. */
 export function isOversight(profile: Profile): boolean {
   return hasAnyRole(profile, ...OVERSIGHT_ROLES);
 }
 
 /** Who is allowed to post to the open jobs board. */
 export function canPostJobs(profile: Profile): boolean {
-  return hasAnyRole(profile, "director", "support_staff");
+  return hasAnyRole(profile, "director", "admin", "support_staff");
 }
 
 /** Distinct departments this profile belongs to, via any of their roles. */

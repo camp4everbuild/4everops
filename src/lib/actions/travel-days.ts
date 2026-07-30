@@ -17,7 +17,7 @@ export type TravelDayInput = {
 };
 
 export async function createTravelDay(input: TravelDayInput): Promise<ActionResult> {
-  const profile = await requireRole("director");
+  const profile = await requireRole("director", "admin");
 
   if (!input.travelDate) return { error: "Travel date is required." };
 
@@ -41,7 +41,7 @@ export async function createTravelDay(input: TravelDayInput): Promise<ActionResu
 }
 
 export async function updateTravelDay(id: string, input: TravelDayInput): Promise<ActionResult> {
-  await requireRole("director");
+  await requireRole("director", "admin");
 
   if (!input.travelDate) return { error: "Travel date is required." };
 
@@ -67,7 +67,7 @@ export async function updateTravelDay(id: string, input: TravelDayInput): Promis
 }
 
 export async function deleteTravelDay(id: string): Promise<ActionResult> {
-  await requireRole("director");
+  await requireRole("director", "admin");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("travel_days")

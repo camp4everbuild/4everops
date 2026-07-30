@@ -11,7 +11,7 @@ export async function createChecklist(input: {
   name: string;
   checklistDate: string;
 }): Promise<ActionResult> {
-  const profile = await requireRole("director");
+  const profile = await requireRole("director", "admin");
 
   const name = input.name.trim();
   if (!name) return { error: "Name is required." };
@@ -30,7 +30,7 @@ export async function createChecklist(input: {
 }
 
 export async function deleteChecklist(id: string): Promise<ActionResult> {
-  await requireRole("director");
+  await requireRole("director", "admin");
   const supabase = await createClient();
   const { data, error } = await supabase.from("checklists").delete().eq("id", id).select("id");
 
@@ -46,7 +46,7 @@ export async function addChecklistItem(input: {
   assignedTo: string | null;
   sortOrder: number;
 }): Promise<ActionResult> {
-  await requireRole("director");
+  await requireRole("director", "admin");
 
   const title = input.title.trim();
   if (!title) return { error: "Title is required." };
@@ -102,7 +102,7 @@ export async function assignChecklistItem(id: string, userId: string | null): Pr
 }
 
 export async function deleteChecklistItem(id: string): Promise<ActionResult> {
-  const profile = await requireRole("director");
+  const profile = await requireRole("director", "admin");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("checklist_items")

@@ -5,7 +5,7 @@ import { PendingApprovals } from "./pending-approvals";
 import { TeamRoster } from "./team-roster";
 
 export default async function TeamPage() {
-  await requireRole("director");
+  await requireRole("director", "admin");
 
   const [pending, everyone] = await Promise.all([getPendingProfiles(), getAllProfiles()]);
   const active = everyone.filter((p) => p.status === "active");
