@@ -1,44 +1,69 @@
-import Link from "next/link";
 import { requireRole } from "@/lib/auth";
+import { getAdminStats, getWorkersWithLastLogin } from "@/lib/queries/admin";
 import { getRecentNotificationsForAdmin } from "@/lib/queries/notifications";
 import { getAuditLog } from "@/lib/queries/audit";
+import { getAllTasks, getOpenTaskCounts } from "@/lib/queries/tasks";
+import { getOpenJobs } from "@/lib/queries/jobs";
+import { getAllProfiles } from "@/lib/queries/profiles";
+import { getTodayChecklist, getChecklistItems } from "@/lib/queries/checklists";
+import { getScheduleStops } from "@/lib/queries/schedule";
+import { getAllCots } from "@/lib/queries/cots";
 import { PageHeader } from "@/components/ui";
 import { AdminBoard } from "./admin-board";
 
 export default async function AdminPage() {
-  await requireRole("director", "admin");
+  const profile = await requireRole("director", "admin");
+  const today = new Date().toISOString().slice(0, 10);
 
-  const [notifications, auditLog] = await Promise.all([
+  const [
+    stats,
+    workers,
+    notifications,
+    auditLog,
+    tasks,
+    jobs,
+    taskCounts,
+    allProfiles,
+    todayChecklist,
+    scheduleStops,
+    cots,
+  ] = await Promise.all([
+    getAdminStats(),
+    getWorkersWithLastLogin(),
     getRecentNotificationsForAdmin(),
     getAuditLog(),
+    getAllTasks(),
+    getOpenJobs(),
+    getOpenTaskCounts(),
+    getAllProfiles(),
+    getTodayChecklist(),
+    getScheduleStops(today),
+    getAllCots(),
   ]);
+
+  const checklistItems = todayChecklist ? await getChecklistItems(todayChecklist.id) : [];
+  const assignableProfiles = allProfiles.filter((p) => p.status === "active");
 
   return (
     <>
-      <PageHeader title="Admin" subtitle="Notifications and an audit trail of admin actions." />
+      <PageHeader title="Admin" subtitle="Full control center — everyone, everything, live." />
 
-      <div className="mb-6 flex flex-wrap gap-2">
-        <Link
-          href="/team"
-          className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium transition hover:bg-border/40"
-        >
-          Team & roles
-        </Link>
-        <Link
-          href="/imports"
-          className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium transition hover:bg-border/40"
-        >
-          CSV imports
-        </Link>
-        <Link
-          href="/today"
-          className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium transition hover:bg-border/40"
-        >
-          Today&apos;s checklist
-        </Link>
-      </div>
-
-      <AdminBoard initialNotifications={notifications} initialAuditLog={auditLog} />
+      <AdminBoard
+        currentUserId={profile.id}
+        todayDate={today}
+        stats={stats}
+        workers={workers}
+        initialNotifications={notifications}
+        initialAuditLog={auditLog}
+        initialTasks={tasks}
+        initialJobs={jobs}
+        assignableProfiles={assignableProfiles}
+        taskCounts={taskCounts}
+        checklistId={todayChecklist?.id ?? null}
+        initialChecklistItems={checklistItems}
+        initialScheduleStops={scheduleStops}
+        initialCots={cots}
+      />
     </>
   );
 }

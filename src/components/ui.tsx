@@ -145,7 +145,7 @@ export function TabBar<T extends string>({
   onChange: (id: T) => void;
 }) {
   return (
-    <div className="mb-5 flex items-center gap-0.5 rounded-full bg-border/40 p-1">
+    <div className="mb-5 flex items-center gap-0.5 overflow-x-auto rounded-full bg-border/40 p-1">
       {tabs.map((tab) => {
         const active = tab.id === value;
         return (
@@ -153,7 +153,7 @@ export function TabBar<T extends string>({
             key={tab.id}
             type="button"
             onClick={() => onChange(tab.id)}
-            className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition active:scale-[0.97] ${
+            className={`shrink-0 flex-1 whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition active:scale-[0.97] ${
               active ? "bg-accent text-accent-fg shadow-sm shadow-accent/30" : "text-muted hover:text-foreground"
             }`}
           >

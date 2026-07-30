@@ -5,11 +5,31 @@ import { formatDistanceToNow } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import { retriggerNotification } from "@/lib/actions/notifications";
 import { Card, EmptyState, TabBar } from "@/components/ui";
-import { RefreshIcon } from "@/components/icons";
+import {
+  RefreshIcon,
+  TasksIcon,
+  JobsIcon,
+  TeamIcon,
+  ChecklistIcon,
+  BedIcon,
+  BellIcon,
+} from "@/components/icons";
 import { useSyncedState } from "@/lib/use-synced-state";
-import type { AuditLogEntry, NotificationWithRecipient } from "@/lib/types";
+import { WorkersTab } from "./workers-tab";
+import { LiveOpsTab } from "./live-ops-tab";
+import type {
+  AuditLogEntry,
+  ChecklistItemWithAssignee,
+  Cot,
+  NotificationWithRecipient,
+  OpenJobWithPeople,
+  Profile,
+  ScheduleStopWithAssignee,
+  TaskWithPeople,
+} from "@/lib/types";
+import type { AdminStats, WorkerWithLastLogin } from "@/lib/queries/admin";
 
-type Tab = "notifications" | "audit";
+type Tab = "overview" | "workers" | "liveops" | "activity" | "notifications";
 
 const NOTIFICATION_SELECT = "*, recipient:user_id(id, full_name)";
 
@@ -47,13 +67,37 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 export function AdminBoard({
+  currentUserId,
+  todayDate,
+  stats,
+  workers,
   initialNotifications,
   initialAuditLog,
+  initialTasks,
+  initialJobs,
+  assignableProfiles,
+  taskCounts,
+  checklistId,
+  initialChecklistItems,
+  initialScheduleStops,
+  initialCots,
 }: {
+  currentUserId: string;
+  todayDate: string;
+  stats: AdminStats;
+  workers: WorkerWithLastLogin[];
   initialNotifications: NotificationWithRecipient[];
   initialAuditLog: AuditLogEntry[];
+  initialTasks: TaskWithPeople[];
+  initialJobs: OpenJobWithPeople[];
+  assignableProfiles: Profile[];
+  taskCounts: Record<string, number>;
+  checklistId: string | null;
+  initialChecklistItems: ChecklistItemWithAssignee[];
+  initialScheduleStops: ScheduleStopWithAssignee[];
+  initialCots: Cot[];
 }) {
-  const [tab, setTab] = useState<Tab>("notifications");
+  const [tab, setTab] = useState<Tab>("overview");
   const [notifications, setNotifications] = useSyncedState(initialNotifications);
   const [auditLog, setAuditLog] = useSyncedState(initialAuditLog);
 
@@ -102,14 +146,101 @@ export function AdminBoard({
     <div>
       <TabBar
         tabs={[
-          { id: "notifications", label: "Notifications" },
-          { id: "audit", label: "Audit log" },
+          { id: "overview", label: "Overview" },
+          { id: "workers", label: "Workers" },
+          { id: "liveops", label: "Live ops" },
+          { id: "activity", label: "Activity" },
+          { id: "notifications", label: "Alerts" },
         ]}
         value={tab}
         onChange={setTab}
       />
 
-      {tab === "notifications" ? <NotificationsAdmin items={notifications} /> : <AuditLog items={auditLog} />}
+      <div className={tab === "overview" ? "" : "hidden"}>
+        <Overview stats={stats} recentActivity={auditLog.slice(0, 5)} />
+      </div>
+      <div className={tab === "workers" ? "" : "hidden"}>
+        <WorkersTab workers={workers} />
+      </div>
+      <div className={tab === "liveops" ? "" : "hidden"}>
+        <LiveOpsTab
+          currentUserId={currentUserId}
+          todayDate={todayDate}
+          initialTasks={initialTasks}
+          initialJobs={initialJobs}
+          assignableProfiles={assignableProfiles}
+          taskCounts={taskCounts}
+          checklistId={checklistId}
+          initialChecklistItems={initialChecklistItems}
+          initialScheduleStops={initialScheduleStops}
+          initialCots={initialCots}
+        />
+      </div>
+      <div className={tab === "activity" ? "" : "hidden"}>
+        <AuditLog items={auditLog} />
+      </div>
+      <div className={tab === "notifications" ? "" : "hidden"}>
+        <NotificationsAdmin items={notifications} />
+      </div>
+    </div>
+  );
+}
+
+function Overview({
+  stats,
+  recentActivity,
+}: {
+  stats: AdminStats;
+  recentActivity: AuditLogEntry[];
+}) {
+  const cards: { label: string; value: string | number; icon: typeof TasksIcon }[] = [
+    { label: "Active staff", value: stats.activeStaff, icon: TeamIcon },
+    { label: "Pending approvals", value: stats.pendingApprovals, icon: BellIcon },
+    { label: "Open jobs", value: stats.openJobs, icon: JobsIcon },
+    { label: "Active tasks", value: stats.activeTasks, icon: TasksIcon },
+    { label: "Cots out", value: stats.cotsOut, icon: BedIcon },
+    {
+      label: "Today's checklist",
+      value: stats.checklistTotal > 0 ? `${stats.checklistDone}/${stats.checklistTotal}` : "—",
+      icon: ChecklistIcon,
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {cards.map((c) => {
+          const Icon = c.icon;
+          return (
+            <Card key={c.label} className="flex flex-col items-center gap-1.5 py-5 text-center">
+              <Icon className="h-5 w-5 text-muted" />
+              <span className="text-2xl font-semibold tracking-tight">{c.value}</span>
+              <span className="text-xs text-muted">{c.label}</span>
+            </Card>
+          );
+        })}
+      </div>
+
+      <section>
+        <h2 className="mb-3 text-sm font-medium text-muted">Recent activity</h2>
+        {recentActivity.length === 0 ? (
+          <EmptyState>Nothing logged yet.</EmptyState>
+        ) : (
+          <div className="space-y-2">
+            {recentActivity.map((entry) => (
+              <Card key={entry.id}>
+                <p className="text-sm">
+                  <span className="font-medium">{entry.actor_name}</span> —{" "}
+                  {ACTION_LABELS[entry.action] ?? entry.action}
+                </p>
+                <p className="mt-0.5 text-xs text-muted">
+                  {formatDistanceToNow(new Date(entry.created_at), { addSuffix: true })}
+                </p>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
