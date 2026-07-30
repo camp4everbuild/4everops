@@ -4,16 +4,17 @@ import { useEffect, useState } from "react";
 import { isPushSupported, iosNeedsInstall, getExistingSubscription, subscribeToPush } from "@/lib/push-client";
 import { BellIcon } from "@/components/icons";
 
-// Session-only, not localStorage — "Not now" skips this app open, but the
-// next time they open the app it asks again. Only an actual browser-level
-// decision (permission granted or denied) stops it from asking, which the
-// Notification.permission !== "default" check below already handles.
-const DISMISSED_KEY = "push-prompt-dismissed-session";
+// localStorage, not sessionStorage — a one-time ask. "Not now" or Allow
+// both count as a real decision and neither should nag again. This key is
+// new (distinct from the old banner's), so it re-asks once for everyone,
+// including accounts that already dismissed the old banner.
+const DISMISSED_KEY = "push-prompt-decided-v2";
 
 /**
- * Blocks the app on load (no X, no backdrop-click, no Escape) until the
- * visitor actually taps Allow or Not now — a small dismissible banner was
- * too easy to ignore, and the whole point is that everyone gets asked.
+ * Blocks the app on load (no X, no backdrop-click, no Escape) the first
+ * time someone opens the app after this shipped — every existing account
+ * gets this once, not just new signups, since the check is purely
+ * permission/localStorage-based rather than tied to when they signed up.
  * Doesn't fire the native permission dialog on its own — some browsers
  * (Safari) ignore requestPermission() calls that aren't triggered by a real
  * tap, so this screen IS that tap: one deliberate interaction, then the
@@ -26,7 +27,7 @@ export function PushPrompt() {
 
   useEffect(() => {
     async function check() {
-      if (sessionStorage.getItem(DISMISSED_KEY)) return;
+      if (localStorage.getItem(DISMISSED_KEY)) return;
       if (!isPushSupported() || iosNeedsInstall()) return;
       if (Notification.permission !== "default") return;
 
@@ -37,7 +38,7 @@ export function PushPrompt() {
   }, []);
 
   function dismiss() {
-    sessionStorage.setItem(DISMISSED_KEY, "1");
+    localStorage.setItem(DISMISSED_KEY, "1");
     setVisible(false);
   }
 
