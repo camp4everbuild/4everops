@@ -46,7 +46,7 @@ export default async function AdminPage() {
 
   return (
     <>
-      <PageHeader title="Admin" subtitle="Full control center — everyone, everything, live." />
+      <PageHeader title="Admin" />
 
       <AdminBoard
         currentUserId={profile.id}

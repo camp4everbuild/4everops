@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 import { OVERSIGHT_ROLES, type UserRole } from "@/lib/types";
 import { HomeIcon, CalendarIcon, TeamIcon, UploadIcon, ShieldIcon } from "@/components/icons";
+import { APP_VERSION } from "@/lib/version";
 
 const ITEMS: {
   href: string;
@@ -27,26 +28,28 @@ export function BottomNav({ roles }: { roles: UserRole[] }) {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-surface/95 backdrop-blur">
-      <div
-        className="mx-auto flex w-full max-w-3xl items-stretch justify-around"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
-        {items.map((item) => {
-          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${
-                active ? "text-accent" : "text-muted hover:text-foreground"
-              }`}
-            >
-              <Icon className="h-6 w-6" strokeWidth={active ? 2 : 1.75} />
-              {item.label}
-            </Link>
-          );
-        })}
+      <div className="mx-auto w-full max-w-3xl" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="flex items-stretch justify-around">
+          {items.map((item) => {
+            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${
+                  active ? "text-accent" : "text-muted hover:text-foreground"
+                }`}
+              >
+                <Icon className="h-6 w-6" strokeWidth={active ? 2 : 1.75} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+        <p className="pb-1 text-center text-[9px] text-muted/70">
+          4everOPS v{APP_VERSION} · {new Date().getFullYear()}
+        </p>
       </div>
     </nav>
   );

@@ -6,6 +6,7 @@ import { HeaderThemeToggle } from "@/components/header-theme-toggle";
 import { NotificationBell } from "@/components/notification-bell";
 import { PushPrompt } from "@/components/push-prompt";
 import { VisibilityRefresh } from "@/components/visibility-refresh";
+import { LiveIndicator } from "@/components/live-indicator";
 import { ShieldIcon } from "@/components/icons";
 import { createClient } from "@/lib/supabase/server";
 
@@ -33,6 +34,7 @@ export default async function AppLayout({
             4everOPS
           </Link>
           <div className="flex items-center gap-3">
+            <LiveIndicator />
             {isDirector(profile) ? (
               <Link
                 href="/admin"
