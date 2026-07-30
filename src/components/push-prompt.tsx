@@ -2,16 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { isPushSupported, iosNeedsInstall, getExistingSubscription, subscribeToPush } from "@/lib/push-client";
-import { BellIcon, XIcon } from "@/components/icons";
+import { BellIcon } from "@/components/icons";
 
-const DISMISSED_KEY = "push-prompt-dismissed";
+// Session-only, not localStorage — "Not now" skips this app open, but the
+// next time they open the app it asks again. Only an actual browser-level
+// decision (permission granted or denied) stops it from asking, which the
+// Notification.permission !== "default" check below already handles.
+const DISMISSED_KEY = "push-prompt-dismissed-session";
 
 /**
- * Shows itself automatically on load (no need to find it in Profile) when
- * push is available but not yet decided one way or the other. Doesn't fire
- * the native permission dialog on its own — some browsers (Safari) ignore
- * requestPermission() calls that aren't triggered by a real tap, so this
- * banner IS that tap: one deliberate interaction, then the real prompt.
+ * Blocks the app on load (no X, no backdrop-click, no Escape) until the
+ * visitor actually taps Allow or Not now — a small dismissible banner was
+ * too easy to ignore, and the whole point is that everyone gets asked.
+ * Doesn't fire the native permission dialog on its own — some browsers
+ * (Safari) ignore requestPermission() calls that aren't triggered by a real
+ * tap, so this screen IS that tap: one deliberate interaction, then the
+ * real OS prompt.
  */
 export function PushPrompt() {
   const [visible, setVisible] = useState(false);
@@ -20,7 +26,7 @@ export function PushPrompt() {
 
   useEffect(() => {
     async function check() {
-      if (localStorage.getItem(DISMISSED_KEY)) return;
+      if (sessionStorage.getItem(DISMISSED_KEY)) return;
       if (!isPushSupported() || iosNeedsInstall()) return;
       if (Notification.permission !== "default") return;
 
@@ -31,7 +37,7 @@ export function PushPrompt() {
   }, []);
 
   function dismiss() {
-    localStorage.setItem(DISMISSED_KEY, "1");
+    sessionStorage.setItem(DISMISSED_KEY, "1");
     setVisible(false);
   }
 
@@ -50,44 +56,41 @@ export function PushPrompt() {
   if (!visible) return null;
 
   return (
-    <div className="shell-content pt-3">
-      <div className="flex items-start gap-3 rounded-2xl border border-accent/30 bg-accent/10 p-4">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent">
-          <BellIcon className="h-4 w-4" />
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+      <div
+        className="relative w-full max-w-sm rounded-t-3xl border border-border bg-surface p-6 shadow-xl sm:rounded-3xl"
+        style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+      >
+        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent">
+          <BellIcon className="h-5 w-5" />
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">Turn on notifications</p>
-          <p className="mt-0.5 text-sm text-muted">
-            Get notified about new tasks, jobs, and approvals — even when the app is closed.
-          </p>
-          {error ? <p className="mt-1 text-xs text-red-500">{error}</p> : null}
-          <div className="mt-2 flex gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={enable}
-              className="min-h-9 rounded-lg bg-accent px-3 text-sm font-medium text-accent-fg transition active:scale-[0.97] disabled:opacity-50"
-            >
-              {busy ? "Enabling…" : "Allow"}
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={dismiss}
-              className="min-h-9 rounded-lg px-3 text-sm font-medium text-muted transition hover:text-foreground"
-            >
-              Not now
-            </button>
-          </div>
+        <h2 className="mt-3 text-lg font-semibold tracking-tight">Turn on notifications</h2>
+        <p className="mt-1 text-sm text-muted">
+          Get notified about new tasks, jobs, and approvals — even when the app is closed. You can
+          change this later in Profile.
+        </p>
+        {error ? <p className="mt-2 text-xs text-red-500">{error}</p> : null}
+
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={enable}
+            className="min-h-11 flex-1 rounded-xl bg-accent px-4 text-sm font-medium text-accent-fg shadow-sm shadow-accent/30 transition active:scale-[0.97] disabled:opacity-50"
+          >
+            {busy ? "Enabling…" : "Allow notifications"}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={dismiss}
+            className="min-h-11 rounded-xl border border-border px-4 text-sm font-medium text-muted transition hover:text-foreground disabled:opacity-50"
+          >
+            Not now
+          </button>
         </div>
-        <button
-          type="button"
-          aria-label="Dismiss"
-          onClick={dismiss}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted hover:bg-border/40 hover:text-foreground"
-        >
-          <XIcon className="h-3.5 w-3.5" />
-        </button>
       </div>
     </div>
   );
