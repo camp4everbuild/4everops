@@ -16,7 +16,7 @@ const ITEMS: {
   { href: "/today", label: "Today", icon: CalendarIcon },
   { href: "/imports", label: "Import", icon: UploadIcon, roles: OVERSIGHT_ROLES },
   { href: "/team", label: "Team", icon: TeamIcon, roles: OVERSIGHT_ROLES },
-  { href: "/admin", label: "Admin", icon: ShieldIcon, roles: ["director"] },
+  { href: "/admin", label: "Admin", icon: ShieldIcon, roles: ["director", "admin"] },
 ];
 
 export function BottomNav({ roles }: { roles: UserRole[] }) {

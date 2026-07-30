@@ -22,16 +22,29 @@ export async function createTask(input: {
   if (!input.assignedTo) return { error: "Pick who this task is for." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("tasks").insert({
-    title,
-    description: input.description?.trim() || null,
-    assigned_to: input.assignedTo,
-    assigned_by: profile.id,
-    due_at: input.dueAt,
-    priority: input.priority,
-  });
+  const { data: created, error } = await supabase
+    .from("tasks")
+    .insert({
+      title,
+      description: input.description?.trim() || null,
+      assigned_to: input.assignedTo,
+      assigned_by: profile.id,
+      due_at: input.dueAt,
+      priority: input.priority,
+    })
+    .select("id")
+    .single();
 
   if (error) return { error: error.message };
+
+  await logAudit({
+    actorId: profile.id,
+    actorName: profile.full_name,
+    action: "create_task",
+    targetTable: "tasks",
+    targetId: created.id,
+    detail: title,
+  });
 
   revalidatePath("/");
   return { error: null };
@@ -41,16 +54,26 @@ export async function updateTaskStatus(
   id: string,
   status: "pending" | "in_progress" | "completed",
 ): Promise<ActionResult> {
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("tasks")
     .update({ status })
     .eq("id", id)
-    .select("id");
+    .select("id, title");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "update_task_status",
+      targetTable: "tasks",
+      targetId: id,
+      detail: data?.[0]?.title ? `${data[0].title} → ${status}` : status,
+    });
+    revalidatePath("/");
+  }
   return result;
 }
 
@@ -79,10 +102,20 @@ export async function reassignTask(id: string, assigneeId: string): Promise<Acti
     .from("tasks")
     .update({ assigned_to: assigneeId })
     .eq("id", id)
-    .select("id");
+    .select("id, title");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "reassign_task",
+      targetTable: "tasks",
+      targetId: id,
+      detail: data?.[0]?.title,
+    });
+    revalidatePath("/");
+  }
   return result;
 }
 

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Landing spot for Google/Apple OAuth redirects. Exchanges the auth code for
@@ -24,9 +25,23 @@ export async function GET(request: NextRequest) {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("phone, status")
+          .select("full_name, phone, status")
           .eq("id", user.id)
           .maybeSingle();
+
+        // Admin client, deliberately — right after exchangeCodeForSession
+        // the new session lives only on this client's in-memory state and
+        // the outgoing response cookies, not yet on any cookies a fresh
+        // client could read back, so a normal RLS-bound insert here would
+        // see auth.uid() as null and get rejected.
+        if (profile?.status === "active") {
+          const admin = createAdminClient();
+          await admin.from("audit_log").insert({
+            actor_id: user.id,
+            actor_name: profile.full_name,
+            action: "login",
+          });
+        }
 
         if (!profile?.phone) return NextResponse.redirect(`${origin}/onboarding`);
         if (profile.status !== "active") return NextResponse.redirect(`${origin}/pending`);

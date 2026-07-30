@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { requireProfile } from "@/lib/auth";
+import { isDirector, requireProfile } from "@/lib/auth";
 import { ROLE_LABELS } from "@/lib/types";
 import { BottomNav } from "@/components/bottom-nav";
 import { HeaderThemeToggle } from "@/components/header-theme-toggle";
 import { NotificationBell } from "@/components/notification-bell";
 import { PushPrompt } from "@/components/push-prompt";
 import { VisibilityRefresh } from "@/components/visibility-refresh";
+import { ShieldIcon } from "@/components/icons";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({
@@ -32,6 +33,15 @@ export default async function AppLayout({
             4everOPS
           </Link>
           <div className="flex items-center gap-3">
+            {isDirector(profile) ? (
+              <Link
+                href="/admin"
+                aria-label="Admin"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-border/40 hover:text-foreground"
+              >
+                <ShieldIcon className="h-4 w-4" />
+              </Link>
+            ) : null}
             <HeaderThemeToggle />
             <NotificationBell
               userId={profile.id}

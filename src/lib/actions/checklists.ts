@@ -46,21 +46,34 @@ export async function addChecklistItem(input: {
   assignedTo: string | null;
   sortOrder: number;
 }): Promise<ActionResult> {
-  await requireRole("director", "admin");
+  const profile = await requireRole("director", "admin");
 
   const title = input.title.trim();
   if (!title) return { error: "Title is required." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("checklist_items").insert({
-    checklist_id: input.checklistId,
-    title,
-    department: input.department,
-    assigned_to: input.assignedTo,
-    sort_order: input.sortOrder,
-  });
+  const { data: created, error } = await supabase
+    .from("checklist_items")
+    .insert({
+      checklist_id: input.checklistId,
+      title,
+      department: input.department,
+      assigned_to: input.assignedTo,
+      sort_order: input.sortOrder,
+    })
+    .select("id")
+    .single();
 
   if (error) return { error: error.message };
+
+  await logAudit({
+    actorId: profile.id,
+    actorName: profile.full_name,
+    action: "create_checklist_item",
+    targetTable: "checklist_items",
+    targetId: created.id,
+    detail: title,
+  });
 
   revalidatePath("/today");
   return { error: null };
@@ -80,24 +93,44 @@ export async function toggleChecklistItem(
       completed_at: isComplete ? new Date().toISOString() : null,
     })
     .eq("id", id)
-    .select("id");
+    .select("id, title");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/today");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "toggle_checklist_item",
+      targetTable: "checklist_items",
+      targetId: id,
+      detail: data?.[0]?.title ? `${data[0].title} — ${isComplete ? "done" : "not done"}` : undefined,
+    });
+    revalidatePath("/today");
+  }
   return result;
 }
 
 export async function assignChecklistItem(id: string, userId: string | null): Promise<ActionResult> {
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("checklist_items")
     .update({ assigned_to: userId })
     .eq("id", id)
-    .select("id");
+    .select("id, title");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/today");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "assign_checklist_item",
+      targetTable: "checklist_items",
+      targetId: id,
+      detail: data?.[0]?.title,
+    });
+    revalidatePath("/today");
+  }
   return result;
 }
 

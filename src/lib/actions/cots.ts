@@ -50,10 +50,20 @@ export async function checkCotOut(id: string, roomOrGroup: string): Promise<Acti
       returned_by: null,
     })
     .eq("id", id)
-    .select("id");
+    .select("id, number");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/today");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "check_cot_out",
+      targetTable: "cots",
+      targetId: id,
+      detail: data?.[0] ? `Cot #${data[0].number} → ${room}` : room,
+    });
+    revalidatePath("/today");
+  }
   return result;
 }
 
@@ -65,10 +75,20 @@ export async function checkCotReturned(id: string): Promise<ActionResult> {
     .from("cots")
     .update({ is_out: false, returned_at: new Date().toISOString(), returned_by: profile.id })
     .eq("id", id)
-    .select("id");
+    .select("id, number");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/today");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "check_cot_returned",
+      targetTable: "cots",
+      targetId: id,
+      detail: data?.[0] ? `Cot #${data[0].number}` : undefined,
+    });
+    revalidatePath("/today");
+  }
   return result;
 }
 

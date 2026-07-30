@@ -23,18 +23,31 @@ export async function addScheduleStop(input: {
   if (!label || !address) return { error: "Label and address are required." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("schedule_stops").insert({
-    travel_date: input.travelDate,
-    label,
-    address,
-    time: input.time,
-    notes: input.notes?.trim() || null,
-    sort_order: input.sortOrder,
-    assigned_to: input.assignedTo,
-    created_by: profile.id,
-  });
+  const { data: created, error } = await supabase
+    .from("schedule_stops")
+    .insert({
+      travel_date: input.travelDate,
+      label,
+      address,
+      time: input.time,
+      notes: input.notes?.trim() || null,
+      sort_order: input.sortOrder,
+      assigned_to: input.assignedTo,
+      created_by: profile.id,
+    })
+    .select("id")
+    .single();
 
   if (error) return { error: error.message };
+
+  await logAudit({
+    actorId: profile.id,
+    actorName: profile.full_name,
+    action: "add_schedule_stop",
+    targetTable: "schedule_stops",
+    targetId: created.id,
+    detail: label,
+  });
 
   revalidatePath("/today");
   return { error: null };
@@ -49,10 +62,20 @@ export async function assignScheduleStop(id: string, assigneeId: string | null):
     .from("schedule_stops")
     .update({ assigned_to: assigneeId })
     .eq("id", id)
-    .select("id");
+    .select("id, label");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/today");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "assign_schedule_stop",
+      targetTable: "schedule_stops",
+      targetId: id,
+      detail: data?.[0]?.label,
+    });
+    revalidatePath("/today");
+  }
   return result;
 }
 

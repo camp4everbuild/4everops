@@ -17,56 +17,98 @@ export async function createJob(input: {
   if (!title) return { error: "Title is required." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("open_jobs").insert({
-    title,
-    description: input.description?.trim() || null,
-    created_by: profile.id,
-  });
+  const { data: created, error } = await supabase
+    .from("open_jobs")
+    .insert({
+      title,
+      description: input.description?.trim() || null,
+      created_by: profile.id,
+    })
+    .select("id")
+    .single();
 
   if (error) return { error: error.message };
+
+  await logAudit({
+    actorId: profile.id,
+    actorName: profile.full_name,
+    action: "create_job",
+    targetTable: "open_jobs",
+    targetId: created.id,
+    detail: title,
+  });
 
   revalidatePath("/");
   return { error: null };
 }
 
 export async function claimJob(id: string): Promise<ActionResult> {
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
-  const { error } = await supabase.rpc("claim_open_job", { p_job_id: id });
+  const { data, error } = await supabase.rpc("claim_open_job", { p_job_id: id });
 
   if (error) return { error: error.message };
+
+  await logAudit({
+    actorId: profile.id,
+    actorName: profile.full_name,
+    action: "claim_job",
+    targetTable: "open_jobs",
+    targetId: id,
+    detail: data?.title,
+  });
 
   revalidatePath("/");
   return { error: null };
 }
 
 export async function startJob(id: string): Promise<ActionResult> {
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("open_jobs")
     .update({ status: "in_progress" })
     .eq("id", id)
     .eq("status", "claimed")
-    .select("id");
+    .select("id, title");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "start_job",
+      targetTable: "open_jobs",
+      targetId: id,
+      detail: data?.[0]?.title,
+    });
+    revalidatePath("/");
+  }
   return result;
 }
 
 export async function completeJob(id: string): Promise<ActionResult> {
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("open_jobs")
     .update({ status: "completed", completed_at: new Date().toISOString() })
     .eq("id", id)
     .eq("status", "in_progress")
-    .select("id");
+    .select("id, title");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "complete_job",
+      targetTable: "open_jobs",
+      targetId: id,
+      detail: data?.[0]?.title,
+    });
+    revalidatePath("/");
+  }
   return result;
 }
 
@@ -82,10 +124,20 @@ export async function assignJob(id: string, assigneeId: string): Promise<ActionR
     .update({ status: "claimed", claimed_by: assigneeId, claimed_at: new Date().toISOString() })
     .eq("id", id)
     .neq("status", "completed")
-    .select("id");
+    .select("id, title");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "assign_job",
+      targetTable: "open_jobs",
+      targetId: id,
+      detail: data?.[0]?.title,
+    });
+    revalidatePath("/");
+  }
   return result;
 }
 

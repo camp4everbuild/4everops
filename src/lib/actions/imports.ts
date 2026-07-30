@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { isOversight, requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 import { mutationResult, type ActionResult } from "./types";
 
 /** Stages a batch of CSV rows for review — nothing becomes a real task or job until a director/head dispositions each one. */
@@ -32,6 +33,14 @@ export async function importPendingRows(
   );
 
   if (error) return { error: error.message };
+
+  await logAudit({
+    actorId: profile.id,
+    actorName: profile.full_name,
+    action: "import_rows",
+    targetTable: "pending_imports",
+    detail: `${cleanRows.length} row(s) — ${label}`,
+  });
 
   revalidatePath("/imports");
   return { error: null };
@@ -65,7 +74,17 @@ export async function pushPendingToOpenJob(id: string): Promise<ActionResult> {
 
   const { data, error } = await supabase.from("pending_imports").delete().eq("id", id).select("id");
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/imports");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "push_to_open_job",
+      targetTable: "pending_imports",
+      targetId: id,
+      detail: pending.title,
+    });
+    revalidatePath("/imports");
+  }
   return result;
 }
 
@@ -89,7 +108,17 @@ export async function assignPendingAsTask(id: string, assigneeId: string): Promi
 
   const { data, error } = await supabase.from("pending_imports").delete().eq("id", id).select("id");
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/imports");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "assign_pending_as_task",
+      targetTable: "pending_imports",
+      targetId: id,
+      detail: pending.title,
+    });
+    revalidatePath("/imports");
+  }
   return result;
 }
 
@@ -98,9 +127,19 @@ export async function deletePendingImport(id: string): Promise<ActionResult> {
   if (!isOversight(profile)) return { error: "Only a director or head can do that." };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("pending_imports").delete().eq("id", id).select("id");
+  const { data, error } = await supabase.from("pending_imports").delete().eq("id", id).select("id, title");
 
   const result = mutationResult(data, error);
-  if (!result.error) revalidatePath("/imports");
+  if (!result.error) {
+    await logAudit({
+      actorId: profile.id,
+      actorName: profile.full_name,
+      action: "delete_pending_import",
+      targetTable: "pending_imports",
+      targetId: id,
+      detail: data?.[0]?.title,
+    });
+    revalidatePath("/imports");
+  }
   return result;
 }
